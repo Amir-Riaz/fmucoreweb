@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login — FMU CORE</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Poppins', 'sans-serif'],
+          display: ['Anton', 'sans-serif'],
+          mark: ['Bebas Neue', 'sans-serif']
+        },
+        colors: {
+          brand: {
+            50: '#EAF3F4', 100: '#D2E6E9', 200: '#A6CDD3', 300: '#7AB3BE',
+            400: '#4E9AA9', 500: '#2F7E8F', 600: '#236E81', 700: '#185262',
+            800: '#0F3A47', 900: '#00354F'
+          },
+          lime: '#CEFF99',
+          paper: '#F6FAF7'
+        }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="min-h-screen bg-paper font-sans text-slate-800 antialiased">
+
+  <div class="min-h-screen flex flex-col">
+
+    <!-- Brand header strip -->
+    <header class="w-full py-5 px-6 flex items-center justify-center sm:justify-start sm:px-10">
+      <a href="index.html" class="flex items-center gap-2">
+        <span class="font-mark text-xl text-brand-900 tracking-widest">FMU</span>
+        <span class="font-display text-xl text-brand-600 leading-none">CORE</span>
+      </a>
+    </header>
+
+    <!-- Main content -->
+    <main class="flex-1 flex items-center justify-center px-4 pb-10">
+      <div class="w-full max-w-md">
+
+        <div class="bg-white/90 backdrop-blur border border-slate-200 shadow-xl shadow-brand-900/5 rounded-2xl p-6 sm:p-8">
+
+          <div class="mb-6 text-center">
+            <p class="font-mark tracking-widest text-brand-600 text-xs mb-2">FMU CORE 2026</p>
+            <h1 class="font-display text-2xl text-brand-900">WELCOME BACK</h1>
+            <p class="text-sm text-slate-500 mt-1.5">Log in to your FMU CORE account</p>
+          </div>
+
+          <!-- Alert box -->
+          <div id="alertBox" class="hidden"></div>
+
+          <form id="loginForm" class="space-y-4" novalidate>
+
+            <div>
+              <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+              <input
+                type="email" id="email" name="email" required autocomplete="email"
+                placeholder="you@example.com"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
+              />
+              <p class="text-xs text-red-500 mt-1 hidden field-error" data-for="email"></p>
+            </div>
+
+            <div>
+              <label for="password" class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+              <input
+                type="password" id="password" name="password" required autocomplete="current-password"
+                placeholder="Your password"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm"
+              />
+              <p class="text-xs text-red-500 mt-1 hidden field-error" data-for="password"></p>
+            </div>
+
+            <button
+              type="submit" id="submitBtn"
+              class="w-full mt-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-mark tracking-widest py-2.5 rounded-lg transition shadow-lg shadow-brand-600/25 text-sm"
+            >
+              LOG IN
+            </button>
+
+          </form>
+
+          <p class="text-center text-sm text-slate-500 mt-6">
+            Don't have an account?
+            <a href="signup.html" class="text-brand-600 font-semibold hover:text-brand-700">Sign up</a>
+          </p>
+
+        </div>
+
+        <p class="text-center text-xs text-slate-400 mt-6">
+          &copy; 2026 FMU CORE Conference. All rights reserved.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>
