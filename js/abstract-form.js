@@ -199,10 +199,9 @@ function goToStep(step) {
   document.querySelectorAll("[data-panel]").forEach((panel) => {
     panel.classList.toggle("active", Number(panel.dataset.panelStep) === step);
   });
-  refreshStepGrid();
-  document.getElementById("content").scrollIntoView({ behavior: "smooth", block: "start" });
+refreshStepGrid();
+  document.getElementById("stepGrid").scrollIntoView({ behavior: "smooth", block: "start" });
 }
-
 // ---------------------------------------------------------------
 // Radio / checkbox group rendering + wiring
 // (used for Type of Study, Abstract Category, and the simple
@@ -447,6 +446,33 @@ function wireGenericFields() {
     state.values.city = "";
   });
 
+  // Country -> Province/City: Pakistan uses the structured dropdowns above;
+  // any other country falls back to free-text state/province and city.
+  const countrySelect = document.querySelector('[data-field="country"]');
+  const pkLocationGroup = document.querySelector('[data-field-group="pkLocation"]');
+  const provinceOtherWrap = document.querySelector('[data-field-wrap="provinceOther"]');
+  const cityOtherWrap = document.querySelector('[data-field-wrap="cityOther"]');
+
+  countrySelect.addEventListener("change", () => {
+    const isPakistan = countrySelect.value === "Pakistan";
+    pkLocationGroup.classList.toggle("hidden", !isPakistan);
+    provinceOtherWrap.classList.toggle("hidden", isPakistan);
+    cityOtherWrap.classList.toggle("hidden", isPakistan);
+
+    if (isPakistan) {
+      provinceSelect.disabled = false;
+      state.values.provinceOther = "";
+      state.values.cityOther = "";
+    } else {
+      provinceSelect.value = "";
+      provinceSelect.disabled = true;
+      citySelect.value = "";
+      citySelect.disabled = true;
+      state.values.province = "";
+      state.values.city = "";
+    }
+  });
+  
   // Speciality -> Sub-speciality
   const specialitySelect = document.querySelector('[data-field="speciality"]');
   const subSelect = document.querySelector('[data-field="subSpeciality"]');
@@ -605,6 +631,7 @@ function wireKeywords() {
 }
 
 
+
 async function tryResumeFromQuery(user) {
   const resumeId = new URLSearchParams(location.search).get("resume");
   if (!resumeId) return false;
@@ -616,8 +643,10 @@ async function tryResumeFromQuery(user) {
 
     state.abstractId = resumeId;
     state.reviewKey = data.reviewKey;
+    state.resumeLocked = true; // the abstract itself was never loaded into the form, so steps 1-4 can't be re-opened
     [1, 2, 3, 4].forEach((s) => state.completedSteps.add(s));
     document.querySelector("[data-payment-review-key]").textContent = state.reviewKey;
+    lockStepsForResume();
     refreshStepGrid();
     goToStep(5);
     return true;
@@ -625,6 +654,19 @@ async function tryResumeFromQuery(user) {
     console.error("Failed to resume submission", err);
     return false;
   }
+}
+
+// Disables navigation back into steps 1-4 when resuming a submission purely
+// for payment — their form data was never fetched, so those panels would
+// render empty and confuse the person instead of showing their real answers.
+function lockStepsForResume() {
+  document.querySelectorAll(".step-tile").forEach((tile) => {
+    const step = Number(tile.dataset.step);
+    if (step === 5) return;
+    tile.disabled = true;
+    tile.classList.add("opacity-50", "cursor-not-allowed", "pointer-events-none");
+    tile.title = "This submission is already complete and awaiting payment.";
+  });
 }
 
 // ---------------------------------------------------------------
@@ -961,10 +1003,12 @@ const ok = await submitAbstract(user, profile);
         goToStep(Math.min(step + 1, TOTAL_STEPS));
       });
     });
-    document.querySelectorAll("[data-back]").forEach((btn) => {
-      btn.addEventListener("click", () => goToStep(Math.max(Number(btn.dataset.back) - 1, 1)));
+document.querySelectorAll("[data-back]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (state.resumeLocked) return; // nothing to go back to — already submitted, only payment is left
+        goToStep(Math.max(Number(btn.dataset.back) - 1, 1));
+      });
     });
-
     document.querySelector("[data-complete-submission]").addEventListener("click", () => {
       const valid = validateStep(5);
       if (!valid) {

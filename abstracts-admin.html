@@ -125,7 +125,33 @@
     </div>
 
   </main>
+<!-- Send status email modal -->
+<div data-email-modal class="hidden fixed inset-0 z-50 bg-slate-900/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-bold text-slate-900 mb-1">Send status email</h3>
+    <p class="text-xs text-slate-500 mb-4">Review and edit the message below, then send it via your email client.</p>
 
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1.5">To</label>
+        <input type="email" data-email-to class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Subject</label>
+        <input type="text" data-email-subject class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Message</label>
+        <textarea data-email-body rows="12" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button type="button" data-close-email-modal class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 transition">Cancel</button>
+      <button type="button" data-send-email class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition">Send</button>
+    </div>
+  </div>
+</div>
 <!-- View Abstract Modal -->
 <div
   data-view-modal

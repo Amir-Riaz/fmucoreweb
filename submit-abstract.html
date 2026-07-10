@@ -83,12 +83,12 @@
         Before you begin
       </h2>
       <ul class="space-y-2 text-sm text-slate-600 mb-4 list-disc list-inside marker:text-brand-400">
-        <li>Complete every required field carefully and accurately. Fields marked with an asterisk <span class="text-red-500 font-semibold">*</span> are mandatory.</li>
+        <li>Complete every required field carefully and accurately — fields marked with an asterisk <span class="text-red-500 font-semibold">*</span> are mandatory. <span class="font-semibold text-brand-800">Once submitted, your abstract cannot be edited</span>, so please double-check every section first.</li>
         <li>Provide a valid email address and an active WhatsApp number — your Registration ID, QR code, and all official correspondence will be sent there.</li>
         <li>Your progress is saved automatically as you move between sections.</li>
-        <li>Review your details before submitting. Submit only once; a confirmation email will follow shortly.</li>
+        <li>Review your details carefully before submitting — this action is final. Submit only once; a confirmation email will follow shortly.</li>
         <li>Keep your abstract within the stated word limit and attach up to two figures if required. After review, you'll be notified of your assigned presentation track (Poster, Oral, or Observer).</li>
-        <li>A non-refundable processing fee of Rs. 200/- is required after submission to begin initial processing of your abstract.</li>
+        <li>A non-refundable processing fee of Rs. 200/- is required after submission to begin the initial two-step review of your abstract (Student Reviewer, followed by Faculty Reviewer).</li>
       </ul>
       <div class="flex items-start gap-3 bg-brand-50 rounded-xl p-4 text-sm text-brand-800">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -217,20 +217,35 @@
             </select>
             <p class="field-error-msg">Please select your country.</p>
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Province<span class="text-red-500">*</span></label>
-            <select data-field="province" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white">
-              <option value="">Select your province</option>
-            </select>
-            <p class="field-error-msg">Please select a province.</p>
+         
+         <div data-field-group="pkLocation" class="contents">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Province<span class="text-red-500">*</span></label>
+              <select data-field="province" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white">
+                <option value="">Select your province</option>
+              </select>
+              <p class="field-error-msg">Please select a province.</p>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">City<span class="text-red-500">*</span></label>
+              <select data-field="city" disabled class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white disabled:bg-slate-50 disabled:text-slate-400">
+                <option value="">Select a province first</option>
+              </select>
+              <p class="field-error-msg">Please select a city.</p>
+            </div>
           </div>
-          <div>
+          <div class="hidden" data-field-wrap="provinceOther">
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">State / Province<span class="text-red-500">*</span></label>
+            <input type="text" data-field="provinceOther" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="Enter your state or province" />
+            <p class="field-error-msg">Please enter your state or province.</p>
+          </div>
+          <div class="hidden" data-field-wrap="cityOther">
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">City<span class="text-red-500">*</span></label>
-            <select data-field="city" disabled class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white disabled:bg-slate-50 disabled:text-slate-400">
-              <option value="">Select a province first</option>
-            </select>
-            <p class="field-error-msg">Please select a city.</p>
+            <input type="text" data-field="cityOther" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="Enter your city" />
+            <p class="field-error-msg">Please enter your city.</p>
           </div>
+         
+         
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Ambassador Code <span class="font-normal text-slate-400">(if any)</span></label>
             <input type="text" data-field="ambassadorCode" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="e.g. FMU-AMB-102" />

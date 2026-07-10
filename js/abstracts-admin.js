@@ -140,12 +140,17 @@ function wireControls() {
   );
   document.querySelector("[data-save-status]").addEventListener("click", saveStatusChange);
 
-  // Reviewer modal
+ // Reviewer modal
   document.querySelectorAll("[data-close-reviewers-modal]").forEach((btn) =>
     btn.addEventListener("click", closeReviewersModal)
   );
   document.querySelector("[data-save-reviewers]").addEventListener("click", saveReviewerAssignments);
 
+  // Email modal
+  document.querySelectorAll("[data-close-email-modal]").forEach((btn) =>
+    btn.addEventListener("click", closeEmailModal)
+  );
+  document.querySelector("[data-send-email]").addEventListener("click", sendStatusEmail);
   // Global certificate toggle
   document.querySelector("[data-global-cert-toggle]")?.addEventListener("change", (e) => {
     saveGlobalCertSetting(e.target.checked);
@@ -176,6 +181,95 @@ function applyFilters() {
   });
 
   renderTable();
+}
+
+
+
+// Builds the {to, subject, body} for the status email based on the
+// abstract's current status, track, and key details.
+function buildStatusEmailContent(a) {
+  const p = a.personalInfo || {};
+  const statusKey = a.status || "submitted";
+  const name = `${p.firstName || ""} ${p.lastName || ""}`.trim() || "Participant";
+  const title = a.abstract?.title || "Untitled abstract";
+  const track = a.track ? (TRACK_LABEL[a.track] || a.track) : null;
+
+  const subject = `FMU CORE 2026 — Update on Your Abstract Submission (${a.reviewKey || ""})`;
+
+  let statusLine;
+  if (statusKey === "accepted") {
+    statusLine = "We are pleased to inform you that your abstract has been ACCEPTED for presentation at FMU CORE 2026.";
+  } else if (statusKey === "rejected") {
+    statusLine = "After careful review, we regret to inform you that your abstract was not accepted for presentation at FMU CORE 2026.";
+  } else if (statusKey === "under_review") {
+    statusLine = "Your abstract is currently UNDER REVIEW. We will notify you as soon as a decision has been made.";
+  } else {
+    statusLine = "Your abstract has been received and is pending initial processing.";
+  }
+
+  const bodyLines = [
+    `Dear ${name},`,
+    "",
+    statusLine,
+    "",
+    "Submission Details:",
+    `- Review Key: ${a.reviewKey || "—"}`,
+    `- Abstract Title: ${title}`,
+    track ? `- Presentation Track: ${track}` : null,
+    "",
+    statusKey === "accepted"
+      ? "Please log in to your dashboard for further instructions regarding your presentation, certificate, and conference pass."
+      : null,
+    statusKey === "rejected"
+      ? "Thank you for your interest in FMU CORE 2026. We encourage you to submit again in future editions."
+      : null,
+    "",
+    "Best regards,",
+    "FMU CORE 2026 Organizing Committee",
+  ].filter((line) => line !== null);
+
+  return { to: p.email || "", subject, body: bodyLines.join("\n") };
+}
+
+// Opens the email modal, pre-filled and editable, for the given abstract.
+function openEmailModal(id) {
+  const a = allAbstracts.find((x) => x.id === id);
+  if (!a) return;
+  if (!a.personalInfo?.email) {
+    showToast("No email address found for this submitter.", "error");
+    return;
+  }
+
+  activeAbstractId = id;
+  const { to, subject, body } = buildStatusEmailContent(a);
+  document.querySelector("[data-email-to]").value = to;
+  document.querySelector("[data-email-subject]").value = subject;
+  document.querySelector("[data-email-body]").value = body;
+  document.querySelector("[data-email-modal]").classList.remove("hidden");
+}
+
+function closeEmailModal() {
+  activeAbstractId = null;
+  document.querySelector("[data-email-modal]").classList.add("hidden");
+}
+
+// Opens Gmail's web compose window with the (possibly edited) message
+// pre-filled, ready to send. Gmail compose is used instead of mailto: since
+// mailto: silently does nothing unless the browser has a default mail
+// client registered, which most browsers don't.
+function sendStatusEmail() {
+  const to = document.querySelector("[data-email-to]").value.trim();
+  const subject = document.querySelector("[data-email-subject]").value.trim();
+  const body = document.querySelector("[data-email-body]").value;
+
+  if (!to) {
+    showToast("Please enter a recipient email address.", "error");
+    return;
+  }
+
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(gmailUrl, "_blank", "noopener");
+  closeEmailModal();
 }
 
 // --- Stats overview ---
@@ -265,12 +359,13 @@ function renderTable() {
           <td class="px-4 py-3 text-xs text-slate-600 hidden xl:table-cell">${reviewersSummary(a)}</td>
           <td class="px-4 py-3 text-xs text-slate-600 hidden xl:table-cell">${decisionsSummary(a)}</td>
           <td class="px-4 py-3">
-            <div class="flex items-center justify-end gap-1.5 flex-wrap">
+          <div class="flex items-center justify-end gap-1.5 flex-wrap">
               <button data-action="view" data-id="${a.id}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-brand-700 hover:bg-brand-50 transition">View</button>
               <button data-action="status" data-id="${a.id}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">Change Status</button>
               <button data-action="reviewers" data-id="${a.id}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition">Assign Reviewers</button>
+              <button data-action="email" data-id="${a.id}" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition">Email</button>
             </div>
-          </td>
+             </td>
         </tr>`;
     })
     .join("");
@@ -282,8 +377,10 @@ function renderTable() {
   })
 );
 
+
 tbody.querySelectorAll('[data-action="status"]').forEach((btn) => btn.addEventListener("click", () => openStatusModal(btn.dataset.id)));
   tbody.querySelectorAll('[data-action="reviewers"]').forEach((btn) => btn.addEventListener("click", () => openReviewersModal(btn.dataset.id)));
+tbody.querySelectorAll('[data-action="email"]').forEach((btn) => btn.addEventListener("click", () => openEmailModal(btn.dataset.id)));
 }
 
 function openViewModal(id) {
