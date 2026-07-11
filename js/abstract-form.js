@@ -292,9 +292,10 @@ function validateStep(step) {
     return true;
   });
 
-  requiredFields.forEach((el) => {
+requiredFields.forEach((el) => {
     const name = el.dataset.field;
-    const label = el.closest("div").querySelector("label");
+    const wrap = findFieldWrapper(el);
+    const label = wrap ? wrap.querySelector("label") : null;
     const isOptional = label && !label.querySelector(".text-red-500");
     if (isOptional) return;
 
@@ -325,11 +326,11 @@ function validateStep(step) {
     const name = input.dataset.field;
     const file = state.files[name];
     if (!file) return;
-    const isTiff = /\.(tif|tiff)$/i.test(file.name);
+const isFigureTypeOk = /\.(tif|tiff|png)$/i.test(file.name);
     const isResultCard = name === "resultCard";
     const sizeOk = file.size <= MAX_FILE_MB * 1024 * 1024;
-    const typeOk = isResultCard ? /\.(jpg|jpeg|png|pdf)$/i.test(file.name) : isTiff;
-    if (!sizeOk || !typeOk) {
+    const typeOk = isResultCard ? /\.(jpg|jpeg|png|pdf)$/i.test(file.name) : isFigureTypeOk;
+        if (!sizeOk || !typeOk) {
       setError(input, true);
       valid = false;
       const msg = getFieldErrorMsg(input);
@@ -531,9 +532,9 @@ function wireDropzones() {
       const file = input.files[0];
       if (!file) return;
 
-      const isResultCard = name === "resultCard";
+const isResultCard = name === "resultCard";
       const sizeOk = file.size <= MAX_FILE_MB * 1024 * 1024;
-      const typeOk = isResultCard ? /\.(jpg|jpeg|png|pdf)$/i.test(file.name) : /\.(tif|tiff)$/i.test(file.name);
+      const typeOk = isResultCard ? /\.(jpg|jpeg|png|pdf)$/i.test(file.name) : /\.(tif|tiff|png)$/i.test(file.name);
 
       if (!sizeOk || !typeOk) {
         setError(input, true);
@@ -579,13 +580,13 @@ function wireDropzones() {
     });
   });
 }
+
 async function waitForUploads(names) {
   const pending = names.map((n) => state.fileUploads[n]).filter((u) => u?.status === "uploading" && u.promise);
   if (pending.length) await Promise.allSettled(pending.map((u) => u.promise));
   return names.every((n) => {
     const u = state.fileUploads[n];
-    if (n !== "resultCard") return !state.files[n] || u?.status === "done"; // figures optional
-    return u?.status === "done";
+    return !state.files[n] || u?.status === "done"; // all three files are optional
   });
 }
 // ---------------------------------------------------------------
@@ -860,11 +861,7 @@ figure2Url: state.fileUploads.figure2?.url || null,
     updatedAt: serverTimestamp(),
   };
 
-  // NOTE: file uploads (resultCard, figure1, figure2) live in state.files as
-  // File objects. Wire these to Firebase Storage alongside this Firestore
-  // write, then attach the resulting URLs to `payload` before saving, e.g.:
-  //   payload.personalInfo.resultCardUrl = await uploadAbstractFile(state.files.resultCard, `abstracts/${abstractId}/result-card`);
-  //   payload.abstract.figure1Url = await uploadAbstractFile(state.files.figure1, `abstracts/${abstractId}/figure1`);
+
   try {
     await setDoc(docRef, payload);
     // Mirrors a PII-free copy into a separate collection so reviewers can be

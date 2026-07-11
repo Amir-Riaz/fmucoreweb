@@ -7,8 +7,8 @@
 
 const NAV_LINKS = [
   { key: "about", label: "About Us", href: "about.html" },
-  { key: "teams", label: "Teams", href: "teams.html" },
-  { key: "speakers", label: "Speakers", href: "speakers.html" },
+  //{ key: "teams", label: "Teams", href: "teams.html" },
+  //{ key: "speakers", label: "Speakers", href: "speakers.html" },
   { key: "myqr", label: "My QR", href: "myqr.html" },
 ];
 
