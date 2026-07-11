@@ -253,10 +253,7 @@ function closeEmailModal() {
   document.querySelector("[data-email-modal]").classList.add("hidden");
 }
 
-// Opens Gmail's web compose window with the (possibly edited) message
-// pre-filled, ready to send. Gmail compose is used instead of mailto: since
-// mailto: silently does nothing unless the browser has a default mail
-// client registered, which most browsers don't.
+
 function sendStatusEmail() {
   const to = document.querySelector("[data-email-to]").value.trim();
   const subject = document.querySelector("[data-email-subject]").value.trim();

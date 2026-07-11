@@ -41,6 +41,7 @@ guardPage({
   },
 });
 
+
 async function loadReviews() {
   const snap = isAdminUser
     ? await getDocs(collection(db, ABSTRACT_REVIEWS_COLLECTION))

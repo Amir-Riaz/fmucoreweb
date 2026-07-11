@@ -472,7 +472,7 @@ function wireGenericFields() {
       state.values.city = "";
     }
   });
-  
+
   // Speciality -> Sub-speciality
   const specialitySelect = document.querySelector('[data-field="speciality"]');
   const subSelect = document.querySelector('[data-field="subSpeciality"]');
@@ -822,7 +822,10 @@ async function submitAbstract(user, profile) {
       email: state.values.email, phone: state.values.phone,
       institute: state.values.institute === "Others" ? state.values.instituteOther : state.values.institute,
       fieldOfStudy: state.values.fieldOfStudy, yearOfStudy: state.values.yearOfStudy,
-      country: state.values.country, province: state.values.province, city: state.values.city,
+country: state.values.country,
+      province: state.values.country === "Pakistan" ? state.values.province : (state.values.provinceOther || null),
+      city: state.values.country === "Pakistan" ? state.values.city : (state.values.cityOther || null),
+      
       ambassadorCode: state.values.ambassadorCode || null,
     resultCardUrl: state.fileUploads.resultCard?.url || null,
 },

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Attendee Registration — FMU CORE</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
+        display: ['Anton', 'sans-serif'],
+        mark: ['Bebas Neue', 'sans-serif']
+      },
+      colors: {
+        brand: {
+          50: '#EAF3F4',
+          100: '#D2E6E9',
+          200: '#A6CDD3',
+          300: '#7AB3BE',
+          400: '#4E9AA9',
+          500: '#2F7E8F',
+          600: '#236E81',
+          700: '#185262',
+          800: '#0F3A47',
+          900: '#00354F'
+        },
+        lime: '#CEFF99',
+        paper: '#F6FAF7'
+      }
+    }
+  }
+}
+</script>
+
+<link rel="stylesheet" href="css/style.css" />
+
+</head>
+
+<body class="min-h-screen bg-paper font-sans text-slate-800 antialiased">
+
+<div class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="w-full py-5 px-6 flex items-center justify-center sm:justify-start sm:px-10">
+        <a href="index.html" class="flex items-center gap-2">
+            <span class="font-mark text-xl text-brand-900 tracking-widest">FMU</span>
+            <span class="font-display text-xl text-brand-600 leading-none">CORE</span>
+        </a>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 flex items-center justify-center px-4 pb-10">
+
+        <div class="w-full max-w-lg">
+
+            <div class="bg-white/90 backdrop-blur border border-slate-200 shadow-xl shadow-brand-900/5 rounded-2xl p-8">
+
+                <div class="text-center">
+
+                    <p class="font-mark tracking-widest text-brand-600 text-xs mb-2">
+                        FMU CORE 2026
+                    </p>
+
+                    <h1 class="font-display text-3xl text-brand-900">
+                        ATTENDEE / OBSERVER REGISTRATION
+                    </h1>
+
+                    <p class="text-slate-500 mt-3">
+                        Join FMU CORE 2026 as an attendee or observer.
+                    </p>
+
+                </div>
+
+                <!-- Notice -->
+                <div class="mt-8 rounded-xl border border-brand-200 bg-brand-50 p-6 text-center">
+
+                    <div class="mx-auto w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-8 w-8 text-brand-700"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/>
+                        </svg>
+                    </div>
+
+                    <h2 class="font-display text-2xl text-brand-800">
+                        Registration Opens Soon
+                    </h2>
+
+                    <p class="mt-4 text-slate-600 leading-relaxed">
+                        Registration for <strong>Attendees</strong> and
+                        <strong>Observers</strong> has not yet started.
+                        The registration portal will be available soon.
+                    </p>
+
+                    <p class="mt-3 text-slate-500 text-sm">
+                        Please check back later or follow FMU CORE announcements
+                        for the official opening date.
+                    </p>
+
+                </div>
+
+                <!-- Buttons -->
+                <div class="mt-8 flex flex-col sm:flex-row gap-3">
+
+                    <a href="index.html"
+                       class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-center py-3 rounded-lg font-mark tracking-widest transition">
+                        BACK TO HOME
+                    </a>
+
+                    <a href="login.html"
+                       class="flex-1 border border-brand-600 text-brand-700 hover:bg-brand-50 text-center py-3 rounded-lg font-mark tracking-widest transition">
+                        LOGIN
+                    </a>
+
+                </div>
+
+            </div>
+
+            <p class="text-center text-xs text-slate-400 mt-6">
+                &copy; 2026 FMU CORE Conference. All rights reserved.
+            </p>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>
