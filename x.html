@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>FMU CORE Ambassador Verification</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f3f5f8;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    min-height:100vh;
+
+}
+
+.container{
+
+    width:550px;
+    background:#fff;
+
+    padding:35px;
+
+    border-radius:15px;
+
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+
+}
+
+h2{
+
+    text-align:center;
+    margin-bottom:25px;
+    color:#0b4b72;
+
+}
+
+.input-group{
+
+    display:flex;
+    gap:10px;
+
+}
+
+input{
+
+    flex:1;
+
+    padding:14px;
+
+    border-radius:8px;
+
+    border:1px solid #ccc;
+
+    font-size:16px;
+
+}
+
+button{
+
+    padding:14px 22px;
+
+    border:none;
+
+    border-radius:8px;
+
+    background:#0b74ff;
+
+    color:white;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+}
+
+button:hover{
+
+    background:#005bd3;
+
+}
+
+button:disabled{
+
+    background:#999;
+    cursor:not-allowed;
+
+}
+
+#status{
+
+    margin-top:15px;
+
+    text-align:center;
+
+    font-weight:bold;
+
+}
+
+.card{
+
+    display:none;
+
+    margin-top:25px;
+
+    border-radius:12px;
+
+    background:#f9fafb;
+
+    padding:20px;
+
+    border-left:5px solid #28a745;
+
+}
+
+.card h3{
+
+    margin-bottom:15px;
+    color:#28a745;
+
+}
+
+.row{
+
+    display:flex;
+    justify-content:space-between;
+
+    margin:10px 0;
+
+    border-bottom:1px solid #eee;
+
+    padding-bottom:8px;
+
+}
+
+.label{
+
+    font-weight:bold;
+
+    color:#555;
+
+}
+
+.value{
+
+    color:#111;
+
+}
+
+.error{
+
+    border-left-color:#dc3545;
+
+}
+
+.error h3{
+
+    color:#dc3545;
+
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>FMU CORE Ambassador Verification</h2>
+
+<div class="input-group">
+
+<input
+id="code"
+type="text"
+placeholder="Enter Ambassador Code">
+
+<button
+id="verifyBtn"
+onclick="verifyCode()">
+Verify
+</button>
+
+</div>
+
+<div id="status"></div>
+
+<div
+id="card"
+class="card">
+</div>
+
+</div>
+
+<script>
+
+let ambassadors=[];
+
+const CSV_FILE="rfiles/ams.csv";
+
+async function loadCSV(){
+
+    try{
+
+        document.getElementById("status").innerHTML="Loading database...";
+
+        const response=await fetch(CSV_FILE);
+
+        if(!response.ok){
+
+            throw new Error("CSV file not found.");
+
+        }
+
+        const text=await response.text();
+
+        ambassadors=parseCSV(text);
+
+        document.getElementById("status").style.color="green";
+
+        document.getElementById("status").innerHTML=
+        ambassadors.length+" ambassador records loaded.";
+
+    }
+
+    catch(err){
+
+        document.getElementById("status").style.color="red";
+
+        document.getElementById("status").innerHTML=err.message;
+
+        console.error(err);
+
+    }
+
+}
+
+
+
+function parseCSV(csv){
+
+    const lines=csv.trim().split(/\r?\n/);
+
+    const headers=lines[0].split(",");
+
+    const data=[];
+
+    for(let i=1;i<lines.length;i++){
+
+        const values=lines[i].split(",");
+
+        let obj={};
+
+        headers.forEach((h,index)=>{
+
+            obj[h.trim()]=values[index]?.trim() || "";
+
+        });
+
+        data.push(obj);
+
+    }
+
+    return data;
+
+}
+
+
+
+function verifyCode(){
+
+    const code=document
+    .getElementById("code")
+    .value
+    .trim();
+
+    if(code===""){
+
+        alert("Please enter an ambassador code.");
+
+        return;
+
+    }
+
+    const ambassador=ambassadors.find(a=>
+
+        a.Code.toUpperCase()===code.toUpperCase()
+
+    );
+
+    const card=document.getElementById("card");
+
+    if(ambassador){
+
+        card.className="card";
+
+        card.style.display="block";
+
+        card.innerHTML=`
+
+        <h3>✅ Ambassador Verified</h3>
+
+        <div class="row">
+        <span class="label">Name</span>
+        <span class="value">${ambassador.Name}</span>
+        </div>
+
+        <div class="row">
+        <span class="label">Code</span>
+        <span class="value">${ambassador.Code}</span>
+        </div>
+
+        <div class="row">
+        <span class="label">Institute</span>
+        <span class="value">${ambassador.Institute}</span>
+        </div>
+
+        <div class="row">
+        <span class="label">Email</span>
+        <span class="value">${ambassador.Email}</span>
+        </div>
+
+        <div class="row">
+        <span class="label">Phone</span>
+        <span class="value">${ambassador.Phone}</span>
+        </div>
+
+        `;
+
+    }
+
+    else{
+
+        card.className="card error";
+
+        card.style.display="block";
+
+        card.innerHTML=`
+
+        <h3>❌ Invalid Ambassador Code</h3>
+
+        <p>
+
+        No ambassador exists with the code
+
+        <b>${code}</b>
+
+        </p>
+
+        `;
+
+    }
+
+}
+
+
+
+document
+.getElementById("code")
+.addEventListener("keypress",function(e){
+
+    if(e.key==="Enter"){
+
+        verifyCode();
+
+    }
+
+});
+
+loadCSV();
+
+</script>
+
+</body>
+</html>

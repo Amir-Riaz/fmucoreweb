@@ -409,7 +409,16 @@ const isFigureTypeOk = /\.(tif|tiff|png)$/i.test(file.name);
       box.parentElement.querySelector(".field-error-msg").classList.remove("show");
     }
   }
-
+if (step === 5) {
+    const accountErrEl = document.querySelector('[data-error-for="paymentAccount"]');
+    if (!state.values.paymentAccount) {
+      valid = false;
+      messages.push("Please select the account you paid to.");
+      accountErrEl?.classList.add("show");
+    } else {
+      accountErrEl?.classList.remove("show");
+    }
+  }
   renderStepSummary(step, messages);
 
   return valid;
@@ -640,7 +649,7 @@ async function tryResumeFromQuery(user) {
     const snap = await getDoc(doc(db, ABSTRACTS_COLLECTION, resumeId));
     if (!snap.exists()) return false;
     const data = snap.data();
-    if (data.submittedBy?.uid !== user.uid || data.paymentInfo) return false; // not theirs, or already paid
+    if (data.submittedBy?.uid !== user.uid || data.abstractTrx) return false; // not theirs, or already paid
 
     state.abstractId = resumeId;
     state.reviewKey = data.reviewKey;
@@ -856,6 +865,7 @@ figure2Url: state.fileUploads.figure2?.url || null,
     status: "submitted",       // submitted | pending_payment_verification | under_review | accepted | rejected
     track: null,               // poster | oral | observer — set by admin once decided
     reviewDecision: null,      // null | accepted | rejected — reviewer's recommendation
+    abstractTrx: null,
     paymentInfo: null,         // set once Step 5 (processing fee) is completed
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -886,15 +896,15 @@ async function completePaymentSubmission() {
   btn.textContent = "Submitting…";
 
   try {
-    await updateDoc(doc(db, ABSTRACTS_COLLECTION, state.abstractId), {
-      paymentInfo: {
+await updateDoc(doc(db, ABSTRACTS_COLLECTION, state.abstractId), {
+      abstractTrx: {
         transactionId: state.values.transactionId,
+        account: state.values.paymentAccount,
         submittedAt: serverTimestamp(),
       },
       status: "pending_payment_verification",
       updatedAt: serverTimestamp(),
     });
-
     document.querySelector("[data-review-key]").textContent = state.reviewKey;
     document.querySelector("[data-success-overlay]").classList.remove("hidden");
   } catch (err) {
@@ -904,7 +914,19 @@ async function completePaymentSubmission() {
     alert("We couldn't record your payment details just now. Please check your connection and try again.");
   }
 }
-
+function wirePaymentAccounts() {
+  document.querySelectorAll("input[data-payment-account-radio]").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      state.values.paymentAccount = {
+        id: radio.value,
+        name: radio.dataset.accountName,
+        title: radio.dataset.accountTitle,
+        accountNumber: radio.dataset.accountNumber,
+      };
+      document.querySelector('[data-error-for="paymentAccount"]')?.classList.remove("show");
+    });
+  });
+}
 // ---------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------
@@ -940,6 +962,8 @@ guardPage({
     wireDropzones();
     wireKeywords();
     wireAuthorModal();
+    wirePaymentAccounts();
+
     prefillFromProfile(user, profile);
 
     // Step grid taps — free navigation, matching "navigate between sections freely"

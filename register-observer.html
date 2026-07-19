@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observer Registration — FMU CORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Poppins', 'sans-serif'],
+          display: ['Anton', 'sans-serif'],
+          mark: ['Bebas Neue', 'sans-serif']
+        },
+        colors: {
+          brand: {
+            50: '#EAF3F4', 100: '#D2E6E9', 200: '#A6CDD3', 300: '#7AB3BE',
+            400: '#4E9AA9', 500: '#2F7E8F', 600: '#236E81', 700: '#185262',
+            800: '#0F3A47', 900: '#00354F'
+          },
+          lime: '#CEFF99',
+          paper: '#F6FAF7'
+        }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="min-h-screen bg-paper font-sans text-slate-800 antialiased">
+
+  <div class="min-h-screen flex flex-col">
+    <header class="w-full py-5 px-6 flex items-center justify-center sm:justify-start sm:px-10">
+      <a href="dashboard.html" class="flex items-center gap-2">
+        <span class="font-mark text-xl text-brand-900 tracking-widest">FMU</span>
+        <span class="font-display text-xl text-brand-600 leading-none">CORE</span>
+      </a>
+    </header>
+
+    <main class="flex-1 flex items-start justify-center px-4 pb-16">
+      <div class="w-full max-w-2xl">
+
+        <div id="loadingState" class="animate-pulse space-y-4">
+          <div class="h-8 w-72 bg-slate-200 rounded"></div>
+          <div class="h-40 bg-slate-200 rounded-2xl"></div>
+        </div>
+
+        <div id="content" class="hidden">
+
+          <div class="mb-6 text-center">
+            <p class="font-mark tracking-widest text-brand-600 text-xs mb-2">FMU CORE 2026</p>
+            <h1 class="font-display text-2xl text-brand-900">OBSERVER REGISTRATION & PAYMENT</h1>
+            <p class="text-sm text-slate-500 mt-1.5">5 September 2026 · Select your category, apply an ambassador code if you have one, then confirm payment.</p>
+          </div>
+
+          <div id="alertBox" class="hidden mb-4"></div>
+
+          <!-- Step 1: Category selection -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 mb-5">
+            <h2 class="font-bold text-slate-900 mb-4">1. Choose your category</h2>
+            <div id="categoryList" class="space-y-3"></div>
+          </div>
+
+          <!-- Step 2: Admit / Result card -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 mb-5">
+            <h2 class="font-bold text-slate-900 mb-1">2. Admit / Result Card <span class="font-normal text-slate-400">(optional)</span></h2>
+            <p class="text-xs text-slate-500 italic mb-3">Compulsory for undergraduate students.</p>
+            <div data-dropzone="admitCard" class="relative rounded-xl border-2 border-dashed border-slate-300 hover:border-brand-400 transition p-6 text-center cursor-pointer">
+              <input type="file" id="admitCardInput" accept=".jpg,.jpeg,.png,.pdf" class="absolute inset-0 opacity-0 cursor-pointer" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+              </svg>
+              <p class="text-sm font-semibold text-slate-600" data-dropzone-label>Drag and drop your file here, or click to browse</p>
+              <p class="text-xs text-slate-400 mt-1">Accepted formats: JPG, PNG, PDF · Maximum size 5 MB</p>
+            </div>
+          </div>
+
+          <!-- Step 3: Ambassador code -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 mb-5">
+            <h2 class="font-bold text-slate-900 mb-1">3. Ambassador code <span class="font-normal text-slate-400">(optional)</span></h2>
+            <p class="text-xs text-slate-500 mb-3">Have a code from a campus ambassador? Enter it to check for a discount.</p>
+            <div class="flex gap-2">
+              <input id="ambassadorCode" type="text" placeholder="e.g. KEMU-HA-587"
+                class="flex-1 px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm uppercase" />
+              <button id="verifyCodeBtn" type="button"
+                class="px-4 py-2.5 rounded-lg bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100 transition shrink-0">Verify</button>
+            </div>
+            <p id="ambassadorMsg" class="text-xs mt-2 hidden"></p>
+          </div>
+
+          <!-- Step 4: Fee summary -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 mb-5">
+            <h2 class="font-bold text-slate-900 mb-4">4. Fee summary</h2>
+            <div class="flex justify-between text-sm mb-1.5">
+              <span class="text-slate-500">Regular fee</span>
+              <span id="regularFeeDisplay" class="font-semibold text-slate-800">—</span>
+            </div>
+            <div id="discountRow" class="hidden flex justify-between text-sm mb-1.5">
+              <span class="text-emerald-600">Ambassador discount</span>
+              <span id="discountAmountDisplay" class="font-semibold text-emerald-600">—</span>
+            </div>
+            <div class="border-t border-dashed border-slate-200 my-2"></div>
+            <div class="flex justify-between text-base">
+              <span class="font-bold text-slate-900">Payable amount</span>
+              <span id="payableFeeDisplay" class="font-display text-brand-700 text-xl">—</span>
+            </div>
+          </div>
+
+          <!-- Step 5: Payment -->
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+            <h3 class="font-semibold text-amber-900 mb-1">5. Make payment</h3>
+            <p class="text-xs text-amber-800 mb-3">Pay the amount shown above to <strong>any one</strong> of the following accounts, then select it below.</p>
+
+            <div class="grid gap-3 sm:grid-cols-2" data-payment-accounts>
+
+              <label class="block bg-white border-2 border-amber-200 rounded-lg p-4 cursor-pointer transition has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <span class="text-xs font-semibold text-amber-700 uppercase">Sadapay</span>
+                    <div class="space-y-1 text-sm mt-2">
+                      <p><span class="font-medium">Title:</span> Maheen Mirza</p>
+                      <p class="font-mono text-xs break-all">PK84SADA0000003350414789</p>
+                      <p class="text-xs text-slate-600">Contact/WA: +92 302 6437611</p>
+                    </div>
+                  </div>
+                  <input type="radio" name="paymentAccount" data-payment-account-radio value="sadapay"
+                    data-account-name="Sadapay" data-account-title="Maheen Mirza"
+                    data-account-number="PK84SADA0000003350414789" class="mt-1 h-5 w-5 accent-amber-600">
+                </div>
+              </label>
+
+              <label class="block bg-white border-2 border-amber-200 rounded-lg p-4 cursor-pointer transition has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <span class="text-xs font-semibold text-blue-700 uppercase">Askari Bank</span>
+                    <div class="space-y-1 text-sm mt-2">
+                      <p><span class="font-medium">Title:</span> M Nouman Javed</p>
+                      <p class="font-mono text-xs break-all">PK65ASCM0003880320001595</p>
+                      <p class="text-xs text-slate-600">Contact/WA: +92 335 0414789</p>
+                    </div>
+                  </div>
+                  <input type="radio" name="paymentAccount" data-payment-account-radio value="askari"
+                    data-account-name="Askari Bank" data-account-title="M Nouman Javed"
+                    data-account-number="PK65ASCM0003880320001595" class="mt-1 h-5 w-5 accent-blue-700">
+                </div>
+              </label>
+
+            </div>
+            <p id="paymentAccountError" class="hidden text-xs text-red-500 mt-2">Please select the account you paid to.</p>
+          </div>
+
+          <!-- Step 6: Transaction ID -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 mb-6">
+            <h2 class="font-bold text-slate-900 mb-3">6. Confirm your transaction</h2>
+            <label for="obstrxid" class="block text-sm font-medium text-slate-700 mb-1.5">Transaction / Reference ID</label>
+            <input id="obstrxid" type="text" placeholder="e.g. TXN123456789"
+              class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm" />
+            <p class="text-xs text-red-500 mt-1 hidden" id="trxError"></p>
+          </div>
+
+          <button id="submitRegBtn" type="button"
+            class="w-full bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-mark tracking-widest py-3 rounded-lg transition shadow-lg shadow-brand-600/25 text-sm">
+            SUBMIT REGISTRATION
+          </button>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/register-observer.js"></script>
+</body>
+</html>

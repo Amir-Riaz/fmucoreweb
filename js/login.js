@@ -31,7 +31,9 @@ if (params.get("registered") === "1") {
 if (params.get("blocked") === "1") {
   showAlert(alertBox, "Your account has been temporarily blocked. Please contact the organizers.", "warning");
 }
-
+if (params.get("reset") === "1") {
+  showAlert(alertBox, "Password reset successfully. You can now log in.", "success");
+}
 function setFieldError(fieldName, message) {
   const el = form.querySelector(`.field-error[data-for="${fieldName}"]`);
   const input = document.getElementById(fieldName);

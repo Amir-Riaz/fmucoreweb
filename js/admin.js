@@ -216,10 +216,12 @@ function renderTable() {
         return `
           <tr class="hover:bg-slate-50/60 transition">
             <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">${escapeHtml(u.fullName || "—")}</td>
-            <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">${escapeHtml(u.cnic || "—")}</td>
-            <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${escapeHtml(u.email || "—")}</td>
-            <td class="px-4 py-3 text-slate-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(u.organization || "—")}</td>
-            <td class="px-4 py-3">${statusBadge(u)}</td>
+<td class="px-4 py-3 whitespace-nowrap">
+              <div class="text-slate-900 font-medium">${escapeHtml(u.email || "—")}</div>
+              <div class="text-xs text-slate-500">${escapeHtml(u.organization || "—")}</div>
+              <div class="text-xs text-slate-400">${escapeHtml(u.cnic || "—")}</div>
+            </td>   
+                     <td class="px-4 py-3">${statusBadge(u)}</td>
             <td class="px-4 py-3 text-center">
               <div class="flex flex-col items-center gap-1">
                 ${cpackBadge(u)}

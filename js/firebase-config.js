@@ -8,6 +8,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore,
@@ -35,7 +38,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
+// Add near the other collection constants
+const OBSERVER_REGISTRATIONS_COLLECTION = "observerRegistrations";
 const USERS_COLLECTION = "users";
 const PASSES_COLLECTION = "passes";
 // Abstract submissions (full data — submitter identity, authors, everything).
@@ -56,6 +60,9 @@ export {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
   doc,
   setDoc,
   getDoc,
@@ -70,4 +77,5 @@ export {
   ABSTRACTS_COLLECTION,
   ABSTRACT_REVIEWS_COLLECTION,
   SETTINGS_COLLECTION,
+  OBSERVER_REGISTRATIONS_COLLECTION,
 };

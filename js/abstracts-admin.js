@@ -348,9 +348,30 @@ function renderTable() {
       return `
         <tr class="hover:bg-slate-50/60 transition">
           <td class="px-4 py-3 font-mono text-xs font-bold text-brand-700 whitespace-nowrap">${escapeHtml(a.reviewKey || "—")}</td>
-          <td class="px-4 py-3 font-medium text-slate-900 max-w-xs truncate">${escapeHtml(a.abstract?.title || "Untitled")}${certBadge(a)}</td>
-          <td class="px-4 py-3 text-slate-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(submitterName)}</td>
-          <td class="px-4 py-3 text-slate-600 hidden lg:table-cell whitespace-nowrap">${escapeHtml(a.abstractType?.speciality || "—")}</td>
+
+<td class="px-4 py-3 max-w-xs">
+            <div class="font-medium text-slate-900 truncate">${escapeHtml(submitterName)}</div>
+            <div class="text-slate-600 truncate">${escapeHtml(a.abstract?.title || "Untitled")}${certBadge(a)}</div>
+        <div class="mt-1 space-y-1">
+  ${a.paymentInfo?.transactionId
+    ? `<div class="flex items-center gap-1.5 text-xs">
+         <span class="text-emerald-600 font-semibold truncate">Abstract TXN: ${escapeHtml(a.paymentInfo.transactionId)}</span>
+         ${a.paymentInfo.verified
+           ? `<span class="text-emerald-600" title="Verified">✔</span>`
+           : `<button data-action="verify-payment" data-id="${a.id}" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Verify</button>`}
+       </div>`
+    : `<div class="text-xs text-slate-400">No abstract TXN</div>`}
+  ${a.presentationTrackTrxId
+    ? `<div class="flex items-center gap-1.5 text-xs">
+         <span class="text-indigo-600 font-semibold truncate">Presentation TXN: ${escapeHtml(a.presentationTrackTrxId)}</span>
+         ${a.presentationFeeStatus === "verified"
+           ? `<span class="text-emerald-600" title="Verified">✔</span>`
+           : `<button data-action="verify-presentation" data-id="${a.id}" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Verify</button>`}
+       </div>`
+    : ""}
+</div>
+  </td>
+                    <td class="px-4 py-3 text-slate-600 hidden lg:table-cell whitespace-nowrap">${escapeHtml(a.abstractType?.speciality || "—")}</td>
           <td class="px-4 py-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_STYLE[statusKey] || "bg-slate-100 text-slate-600"}">${STATUS_LABEL[statusKey] || statusKey}</span></td>
           <td class="px-4 py-3">${a.track ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700">${TRACK_LABEL[a.track] || a.track}</span>` : `<span class="text-xs text-slate-400">—</span>`}</td>
           <td class="px-4 py-3 text-xs text-slate-600 hidden xl:table-cell">${reviewersSummary(a)}</td>
@@ -378,8 +399,37 @@ function renderTable() {
 tbody.querySelectorAll('[data-action="status"]').forEach((btn) => btn.addEventListener("click", () => openStatusModal(btn.dataset.id)));
   tbody.querySelectorAll('[data-action="reviewers"]').forEach((btn) => btn.addEventListener("click", () => openReviewersModal(btn.dataset.id)));
 tbody.querySelectorAll('[data-action="email"]').forEach((btn) => btn.addEventListener("click", () => openEmailModal(btn.dataset.id)));
+tbody.querySelectorAll('[data-action="verify-payment"]').forEach((btn) => btn.addEventListener("click", () => verifyAbstractPayment(btn.dataset.id)));
+tbody.querySelectorAll('[data-action="verify-presentation"]').forEach((btn) => btn.addEventListener("click", () => verifyPresentationFee(btn.dataset.id)));
+
+}
+async function verifyAbstractPayment(id) {
+  const a = allAbstracts.find((x) => x.id === id);
+  if (!a) return;
+  try {
+    await updateDoc(doc(db, ABSTRACTS_COLLECTION, id), { "paymentInfo.verified": true, updatedAt: serverTimestamp() });
+    if (a.paymentInfo) a.paymentInfo.verified = true;
+    applyFilters();
+    showToast(`${a.reviewKey} abstract payment verified.`, "success");
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to verify payment. Please try again.", "error");
+  }
 }
 
+async function verifyPresentationFee(id) {
+  const a = allAbstracts.find((x) => x.id === id);
+  if (!a) return;
+  try {
+    await updateDoc(doc(db, ABSTRACTS_COLLECTION, id), { presentationFeeStatus: "verified", updatedAt: serverTimestamp() });
+    a.presentationFeeStatus = "verified";
+    applyFilters();
+    showToast(`${a.reviewKey} presentation fee verified.`, "success");
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to verify presentation fee. Please try again.", "error");
+  }
+}
 function openViewModal(id) {
   const a = allAbstracts.find((x) => x.id === id);
   if (!a) return;

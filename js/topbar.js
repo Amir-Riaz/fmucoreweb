@@ -75,11 +75,22 @@ export function renderTopbar(activePage, { isAdmin = false } = {}) {
       <div class="max-w-6xl mx-auto px-4 sm:px-6">
         <div class="h-16 flex items-center justify-between">
 
-          <a href="dashboard.html" class="flex items-center gap-2 shrink-0">
-            <span class="font-mark text-lg text-brand-900 tracking-widest">FMU</span>
-            <span class="font-display text-lg text-brand-600 leading-none">CORE</span>
-          </a>
+        <a href="dashboard.html" class="flex items-center gap-3 shrink-0">
+  <img 
+    src="cor1.png"
+    alt="FMU CORE Logo"
+    class="h-10 w-auto sm:h-12 lg:h-14"
+  />
 
+  <div class="flex items-center">
+    <span class="font-mark text-xl sm:text-2xl text-brand-900 tracking-widest">
+      FMU
+    </span>
+    <span class="font-display text-xl sm:text-2xl text-brand-600 leading-none">
+      CORE
+    </span>
+  </div>
+</a>
           <!-- Desktop nav -->
           <nav class="hidden md:flex items-center gap-1">
             ${links.map(linkHtml).join("")}

@@ -19,10 +19,16 @@
 <header id="siteNav" class="fixed top-0 inset-x-0 z-50 brand-gradient grain transition-shadow">
   <div class="max-w-7xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
     <a href="index.html" class="flex items-center gap-2 shrink-0">
-      <span class="font-mark text-2xl text-paper tracking-widest">FMU</span>
+      <img
+      src="cor.png"
+      alt="FMUCORE Logo"
+    class="h-12 w-auto sm:h-14 lg:h-16"
+    />
+    <span class="font-mark text-2xl text-paper tracking-widest">FMU</span>
       <span class="font-display text-2xl text-lime leading-none">CORE</span>
       <span class="hidden sm:inline font-mark text-paper/60 text-sm tracking-widest">2026</span>
     </a>
+
     <nav class="hidden lg:flex items-center gap-8 font-mark text-sm">
       <a href="index.html" class="nav-link">Home</a>
       <a href="about.html" class="nav-link">About Us</a>
@@ -135,40 +141,11 @@
   </div>
 </section>
 
-<footer class="brand-gradient grain pt-16 pb-10">
-  <div class="max-w-7xl mx-auto px-5 sm:px-8">
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
-      <div>
-        <span class="font-display text-2xl text-lime">FMU CORE</span>
-        <p class="mt-3 text-paper/70 text-sm leading-relaxed">Conference on Research Excellence. Faisalabad Medical University, August 2026.</p>
-      </div>
-      <div>
-        <p class="font-mark text-paper text-sm tracking-widest mb-4">EXPLORE</p>
-        <ul class="space-y-2 text-paper/70 text-sm">
-          <li><a href="about.html" class="hover:text-lime transition-colors">About Us</a></li>
-          <li><a href="scientific-components.html" class="hover:text-lime transition-colors">Scientific Components</a></li>
-          <li><a href="workshops.html" class="hover:text-lime transition-colors">Workshop Programme</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="font-mark text-paper text-sm tracking-widest mb-4">PARTICIPATE</p>
-        <ul class="space-y-2 text-paper/70 text-sm">
-          <li><a href="abstract-submission.html" class="hover:text-lime transition-colors">Abstract Submission</a></li>
-          <li><a href="ambassador.html" class="hover:text-lime transition-colors">Ambassador Programme</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="font-mark text-paper text-sm tracking-widest mb-4">CONTACT</p>
-        <p class="text-paper/70 text-sm">fmucore.edu.pk</p>
-        <p class="text-paper/70 text-sm mt-1">Live from 20 June 2026</p>
-      </div>
-    </div>
-    <div class="mt-14 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-3 text-paper/50 text-xs">
-      <p>© <span class="js-year"></span> FMU CORE — Faisalabad Medical University. All rights reserved.</p>
-      <p>Punjab Medical College · Faisalabad, Pakistan</p>
-    </div>
-  </div>
-</footer>
+
+
+
+<div data-include="partials/footer.html"></div>
+  <script type="module" src="js/loadfoot/include-partials.js"></script>
 
 <script src="script.js"></script>
 </body>

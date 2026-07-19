@@ -1,6 +1,7 @@
 import { guardPage, attachLogout } from "./auth-guard.js";
 import { renderTopbar } from "./topbar.js";
-import { db, collection, query, where, getDocs, getDoc, doc, ABSTRACTS_COLLECTION, SETTINGS_COLLECTION } from "./firebase-config.js";
+//import { db, collection, query, where, getDocs, getDoc, doc, ABSTRACTS_COLLECTION, SETTINGS_COLLECTION } from "./firebase-config.js";
+import { db, collection, query, where, getDocs, getDoc, doc, ABSTRACTS_COLLECTION, SETTINGS_COLLECTION, OBSERVER_REGISTRATIONS_COLLECTION } from "./firebase-config.js";
 import { generateCertificate, showCertificateInNewTab } from "./certificate.js";
 
 let certificatesIssuedToAll = false;
@@ -49,9 +50,13 @@ guardPage({
     toggleTile("enrolmngrTile", profile.enrolmngr);
     toggleTile("rwrsetTile", profile.rwrset);
 
-    if (profile.studrwr || profile.facrwr || profile.enrolmngr || profile.rwrset) {
+     if (profile.studrwr || profile.facrwr || profile.enrolmngr || profile.rwrset) {
       document.getElementById("specialRolesSection")?.classList.remove("hidden");
     }
+
+    // Observer registration — CTA for those who haven't registered yet,
+    // status badge for those who have. Doesn't touch any existing profile data.
+setupObserverRegistration(user, profile);
 
     // Gate abstract submission behind approval status
    // guardSubmitAbstractTile(profile);
@@ -59,15 +64,96 @@ guardPage({
     await loadGlobalCertSetting();
     loadAbstractSubmissions(user, profile);
 
+    document.getElementById("closeObserverRegModal")?.addEventListener("click", () => {
+  document.getElementById("observerRegModal").classList.add("hidden");
+});
+
     document.getElementById("closeTicketModal")?.addEventListener("click", () => {
       document.getElementById("ticketModal").classList.add("hidden");
     });
+    document.getElementById("closePresFeeModal")?.addEventListener("click", () => {
+  document.getElementById("presentationFeeModal").classList.add("hidden");
+});
     document.getElementById("downloadTicketBtn")?.addEventListener("click", downloadTicketPng);
 
     document.getElementById("loadingState").classList.add("hidden");
     document.getElementById("content").classList.remove("hidden");
   },
 });
+const OBSERVER_STATUS_LABEL = {
+  submitted: "Awaiting Payment Verification",
+  verified: "Observer Registration Confirmed",
+  rejected: "Payment Not Verified",
+};
+
+
+let observerRegCache = null;
+
+function setupObserverRegistration(user, profile) {
+  const tile = document.getElementById("registerObserverTile");
+  const cpackRow = document.getElementById("cpackStatusRow");
+  const badge = document.getElementById("observerStatusBadge");
+
+  if (profile.observerRegistered) {
+    // Already registered — show the status badge in the welcome card,
+    // and turn the tile into a popup trigger instead of a link back to the form.
+    if (badge) {
+      cpackRow?.classList.remove("hidden");
+      badge.classList.remove("hidden");
+      const label = OBSERVER_STATUS_LABEL[profile.observerStatus] || "Observer Registration Submitted";
+      badge.textContent = profile.observerStatus === "verified" ? `✔ ${label}` : label;
+    }
+
+    if (tile) {
+      tile.classList.remove("hidden");
+      tile.removeAttribute("href");
+      tile.classList.add("cursor-pointer");
+      const titleEl = document.getElementById("registerObserverTileTitle");
+      const descEl = document.getElementById("registerObserverTileDesc");
+      if (titleEl) titleEl.textContent = "You're Registered as Observer";
+      if (descEl) descEl.textContent = OBSERVER_STATUS_LABEL[profile.observerStatus] || "Registration submitted — awaiting verification.";
+      tile.classList.add("border-emerald-200");
+      tile.addEventListener("click", (e) => {
+        e.preventDefault();
+        openObserverRegModal(user, profile);
+      });
+    }
+    return;
+  }
+
+  // Not registered yet — show the plain CTA tile for existing participants
+  if (tile) tile.classList.remove("hidden");
+}
+
+async function openObserverRegModal(user, profile) {
+  const modal = document.getElementById("observerRegModal");
+  modal.classList.remove("hidden");
+
+  if (!observerRegCache) {
+    try {
+      const snap = await getDoc(doc(db, OBSERVER_REGISTRATIONS_COLLECTION, user.uid));
+      observerRegCache = snap.exists() ? snap.data() : {};
+    } catch (err) {
+      console.error("Failed to load observer registration", err);
+      observerRegCache = {};
+    }
+  }
+
+  const reg = observerRegCache;
+  const statusKey = profile.observerStatus || reg.status;
+  const statusLabel = OBSERVER_STATUS_LABEL[statusKey] || "Submitted";
+  const statusStyle = statusKey === "verified"
+    ? "bg-emerald-50 text-emerald-700"
+    : statusKey === "rejected"
+      ? "bg-red-50 text-red-700"
+      : "bg-amber-50 text-amber-700";
+
+  document.getElementById("observerRegStatusBadge").textContent = statusKey === "verified" ? `✔ ${statusLabel}` : statusLabel;
+  document.getElementById("observerRegStatusBadge").className = `inline-block px-3 py-1 rounded-full text-xs font-bold ${statusStyle}`;
+  document.getElementById("observerRegCategory").textContent = reg.categoryLabel || "—";
+  document.getElementById("observerRegFee").textContent = reg.payableFee != null ? `PKR ${reg.payableFee.toLocaleString()}` : "—";
+  document.getElementById("observerRegTrx").textContent = reg.obstrxid || "—";
+}
 
 async function loadGlobalCertSetting() {
   try {
@@ -92,6 +178,13 @@ function openTicketModal(abstractData, profile) {
   document.getElementById("ticketTitle").textContent = abstractData.abstract?.title || "Untitled abstract";
   document.getElementById("ticketTrack").textContent = TRACK_LABEL[abstractData.track] || "To be announced";
   document.getElementById("ticketModal").classList.remove("hidden");
+}
+
+function openPresentationConfirmedModal(abstractData) {
+  document.getElementById("presFeeTitle").textContent = abstractData.abstract?.title || "Untitled abstract";
+  document.getElementById("presFeeKey").textContent = abstractData.reviewKey || "—";
+  document.getElementById("presFeeTrack").textContent = TRACK_LABEL[abstractData.track] || "To be announced";
+  document.getElementById("presentationFeeModal").classList.remove("hidden");
 }
 
 async function downloadTicketPng() {
@@ -186,46 +279,62 @@ async function loadAbstractSubmissions(user, profile) {
     section.classList.remove("hidden");
     list.innerHTML = "";
 
-    snap.docs.forEach((d) => {
-      const a = d.data();
-      const statusKey = a.status || "submitted";
-      const certUnlocked = !!a.isscert || certificatesIssuedToAll;
-      const needsPayment = statusKey === "submitted" && !a.paymentInfo;
+  snap.docs.forEach((d) => {
+  const a = d.data();
+  const statusKey = a.status || "submitted";
+  const certUnlocked = !!a.isscert || certificatesIssuedToAll;
+  const needsPayment = statusKey === "submitted" && !a.paymentInfo;
 
-      const li = document.createElement("li");
-      li.className = "flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3";
-      li.innerHTML = `
-        <div class="min-w-0">
-          <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(a.abstract?.title || "Untitled abstract")}</p>
-          <p class="text-xs text-slate-500 font-mono mt-0.5">${escapeHtml(a.reviewKey || "—")}</p>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-          ${a.track ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700">${TRACK_LABEL[a.track] || a.track}</span>` : ""}
-          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_STYLE[statusKey] || "bg-slate-100 text-slate-600"}">${STATUS_LABEL[statusKey] || statusKey}</span>
-          ${needsPayment ? `<a href="submit-abstract.html?resume=${d.id}" class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 transition">Complete Payment</a>` : ""}
-          ${certUnlocked ? `<button data-cert-id="${d.id}" class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 hover:bg-brand-100 transition" title="Download certificate">🎓</button>` : ""}
-          ${statusKey === "accepted" ? `<button data-ticket-id="${d.id}" class="w-8 h-8 flex items-center justify-center rounded-full bg-lime/40 hover:bg-lime/70 transition" title="View your pass">🎫</button>` : ""}
-        </div>`;
-      list.appendChild(li);
+  const presentationEligible = statusKey === "accepted" && !!a.track;
+  const presFeeStatus = a.presentationFeeStatus; // undefined | pending | verified | rejected
 
-      if (statusKey === "accepted") {
-        li.querySelector(`[data-ticket-id="${d.id}"]`)?.addEventListener("click", () => openTicketModal(a, profile));
+  const li = document.createElement("li");
+  li.className = "flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3";
+  li.innerHTML = `
+    <div class="min-w-0">
+      <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(a.abstract?.title || "Untitled abstract")}</p>
+      <p class="text-xs text-slate-500 font-mono mt-0.5">${escapeHtml(a.reviewKey || "—")}</p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+      ${a.track ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700">${TRACK_LABEL[a.track] || a.track}</span>` : ""}
+      <span class="px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_STYLE[statusKey] || "bg-slate-100 text-slate-600"}">${STATUS_LABEL[statusKey] || statusKey}</span>
+      ${needsPayment ? `<a href="submit-abstract.html?resume=${d.id}" class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 transition">Complete Payment</a>` : ""}
+      ${presentationEligible && !presFeeStatus ? `<a href="submit-presentation-fee.html?id=${d.id}" class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 transition">Submit Presentation Fee</a>` : ""}
+      ${presentationEligible && presFeeStatus === "pending" ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700">Presentation Fee: Pending Verification</span>` : ""}
+      ${presentationEligible && presFeeStatus === "rejected" ? `<a href="submit-presentation-fee.html?id=${d.id}" class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 hover:bg-red-100 transition">Presentation Fee Not Verified — Resubmit</a>` : ""}
+      ${presentationEligible && presFeeStatus === "verified" ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">✔ Presentation Confirmed</span>` : ""}
+      ${certUnlocked ? `<button data-cert-id="${d.id}" class="w-8 h-8 flex items-center justify-center rounded-full bg-brand-50 hover:bg-brand-100 transition" title="Download certificate">🎓</button>` : ""}
+      ${statusKey === "accepted" ? `<button data-ticket-id="${d.id}" class="w-8 h-8 flex items-center justify-center rounded-full bg-lime/40 hover:bg-lime/70 transition" title="View your pass">🎫</button>` : ""}
+    </div>`;
+  list.appendChild(li);
 
-        const seenKey = `ticketSeen_${d.id}`;
-        if (!localStorage.getItem(seenKey)) {
-          localStorage.setItem(seenKey, "1");
-          setTimeout(() => openTicketModal(a, profile), 400);
-        }
-      }
+  if (statusKey === "accepted") {
+    li.querySelector(`[data-ticket-id="${d.id}"]`)?.addEventListener("click", () => openTicketModal(a, profile));
 
-      if (certUnlocked) {
-        li.querySelector(`[data-cert-id="${d.id}"]`)?.addEventListener("click", () => downloadCertificate(a, profile));
-      }
-    });
+    const seenKey = `ticketSeen_${d.id}`;
+    if (!localStorage.getItem(seenKey)) {
+      localStorage.setItem(seenKey, "1");
+      setTimeout(() => openTicketModal(a, profile), 400);
+    }
+  }
+
+  if (presFeeStatus === "verified") {
+    const presSeenKey = `presFeeSeen_${d.id}`;
+    if (!localStorage.getItem(presSeenKey)) {
+      localStorage.setItem(presSeenKey, "1");
+      setTimeout(() => openPresentationConfirmedModal(a), 400);
+    }
+  }
+
+  if (certUnlocked) {
+    li.querySelector(`[data-cert-id="${d.id}"]`)?.addEventListener("click", () => downloadCertificate(a, profile));
+  }
+});
   } catch (err) {
     console.error("Failed to load abstract submissions", err);
   }
 }
+
 
 function escapeHtml(str) {
   const div = document.createElement("div");

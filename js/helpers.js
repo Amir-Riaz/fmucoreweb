@@ -14,6 +14,9 @@ export function friendlyAuthError(error) {
     "auth/invalid-credential": "Incorrect email or password.",
     "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
     "auth/network-request-failed": "Network error. Check your internet connection.",
+    "auth/expired-action-code": "This reset link has expired. Please request a new one.",
+    "auth/invalid-action-code": "This reset link is invalid or has already been used. Please request a new one.",
+    "auth/user-disabled": "This account has been disabled. Please contact the organizers.",
   };
   return map[code] || error?.message || "Something went wrong. Please try again.";
 }

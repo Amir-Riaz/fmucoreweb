@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observer Registrations — Admin — FMU CORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Poppins','sans-serif'], display: ['Anton','sans-serif'], mark: ['Bebas Neue','sans-serif'] },
+        colors: {
+          brand: { 50:'#EAF3F4',100:'#D2E6E9',200:'#A6CDD3',300:'#7AB3BE',400:'#4E9AA9',500:'#2F7E8F',600:'#236E81',700:'#185262',800:'#0F3A47',900:'#00354F' },
+          lime: '#CEFF99', paper: '#F6FAF7'
+        }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="min-h-screen bg-paper font-sans text-slate-800 antialiased">
+
+  <div id="topbar"></div>
+
+  <div id="loadingState" class="max-w-6xl mx-auto px-4 sm:px-6 py-10 animate-pulse">
+    <div class="h-8 w-64 bg-slate-200 rounded mb-3"></div>
+    <div class="h-40 bg-slate-200 rounded-2xl"></div>
+  </div>
+
+  <main id="content" class="hidden max-w-6xl mx-auto px-4 sm:px-6 py-10">
+    <div class="mb-6">
+      <h1 class="font-display text-2xl text-brand-900">OBSERVER REGISTRATIONS</h1>
+      <p class="text-sm text-slate-500 mt-1">Review payment submissions and verify each transaction.</p>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-4">
+      <input id="searchInput" type="text" placeholder="Search name, email, TRX ID, ambassador…"
+        class="flex-1 min-w-[220px] px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm" />
+      <select id="statusFilter" class="px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm bg-white">
+        <option value="">All statuses</option>
+        <option value="submitted">Submitted</option>
+        <option value="verified">Verified</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+          <tr>
+            <th class="text-left px-4 py-3">Participant</th>
+            <th class="text-left px-4 py-3">Category</th>
+            <th class="text-left px-4 py-3">Payable</th>
+            <th class="text-left px-4 py-3">Ambassador</th>
+            <th class="text-left px-4 py-3">TRX ID / Account</th>
+            <th class="text-left px-4 py-3">Admit Card</th>
+            <th class="text-left px-4 py-3">Status</th>
+            <th class="text-left px-4 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <p id="emptyState" class="hidden text-center text-sm text-slate-400 py-10">No registrations match your filters.</p>
+    </div>
+  </main>
+
+  <script type="module" src="js/admin-observers.js"></script>
+</body>
+</html>
