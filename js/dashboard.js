@@ -1,11 +1,13 @@
 import { guardPage, attachLogout } from "./auth-guard.js";
 import { renderTopbar } from "./topbar.js";
-//import { db, collection, query, where, getDocs, getDoc, doc, ABSTRACTS_COLLECTION, SETTINGS_COLLECTION } from "./firebase-config.js";
 import { db, collection, query, where, getDocs, getDoc, doc, ABSTRACTS_COLLECTION, SETTINGS_COLLECTION, OBSERVER_REGISTRATIONS_COLLECTION } from "./firebase-config.js";
 import { generateCertificate, showCertificateInNewTab } from "./certificate.js";
+import { getAbstractTrx } from "./trx-helpers.js";
 
 let certificatesIssuedToAll = false;
-let currentTicketAbstract = null; // tracks which abstract is shown in the ticket modal, for the download filename
+let currentTicketAbstract = null;
+
+
 
 guardPage({
   requireAdmin: false,
@@ -24,8 +26,8 @@ guardPage({
 
     const badge = document.getElementById("statusBadge");
     const statusText = {
-      pending: "Pending Approval",
-      approved: "Approved",
+      pending: "Pending Account Approval",
+      approved: "Account Approved",
     };
     badge.textContent = statusText[profile.status] || profile.status;
 
@@ -45,14 +47,16 @@ guardPage({
     }
 
     // Reveal management tiles for accounts holding special (non-admin) permissions
-    toggleTile("studrwrTile", profile.studrwr);
-    toggleTile("facrwrTile", profile.facrwr);
-    toggleTile("enrolmngrTile", profile.enrolmngr);
-    toggleTile("rwrsetTile", profile.rwrset);
+  // Reveal management tiles for accounts holding special (non-admin) permissions
+toggleTile("studrwrTile", profile.studrwr);
+toggleTile("facrwrTile", profile.facrwr);
+toggleTile("enrolmngrTile", profile.enrolmngr);
+toggleTile("rwrsetTile", profile.rwrset);
+toggleTile("badgeverifierTile", profile.badgeverifier);
 
-     if (profile.studrwr || profile.facrwr || profile.enrolmngr || profile.rwrset) {
-      document.getElementById("specialRolesSection")?.classList.remove("hidden");
-    }
+if (profile.studrwr || profile.facrwr || profile.enrolmngr || profile.rwrset || profile.badgeverifier) {
+  document.getElementById("specialRolesSection")?.classList.remove("hidden");
+}
 
     // Observer registration — CTA for those who haven't registered yet,
     // status badge for those who have. Doesn't touch any existing profile data.
@@ -81,7 +85,7 @@ setupObserverRegistration(user, profile);
   },
 });
 const OBSERVER_STATUS_LABEL = {
-  submitted: "Awaiting Payment Verification",
+  submitted: "Awaiting Observer Payment Verification",
   verified: "Observer Registration Confirmed",
   rejected: "Payment Not Verified",
 };
@@ -251,18 +255,22 @@ function guardSubmitAbstractTile(profile) {
   });
 }
 
+
 const STATUS_LABEL = {
-  submitted: "Payment Pending",
+  pending_payment_verification: "Pending Payment Verification",
+  submitted: "Submitted",
   under_review: "Under Review",
   accepted: "Accepted",
   rejected: "Not Accepted",
 };
 const STATUS_STYLE = {
-  submitted: "bg-amber-50 text-amber-700",
+  pending_payment_verification: "bg-amber-50 text-amber-700",
+  submitted: "bg-slate-100 text-slate-600",
   under_review: "bg-amber-50 text-amber-700",
   accepted: "bg-emerald-50 text-emerald-700",
   rejected: "bg-red-50 text-red-700",
 };
+
 const TRACK_LABEL = { poster: "Poster", oral: "Oral", observer: "Observer" };
 
 
@@ -279,15 +287,14 @@ async function loadAbstractSubmissions(user, profile) {
     section.classList.remove("hidden");
     list.innerHTML = "";
 
-  snap.docs.forEach((d) => {
+ snap.docs.forEach((d) => {
   const a = d.data();
   const statusKey = a.status || "submitted";
   const certUnlocked = !!a.isscert || certificatesIssuedToAll;
-  const needsPayment = statusKey === "submitted" && !a.paymentInfo;
-
+  const needsPayment = statusKey === "submitted" && !getAbstractTrx(a);
   const presentationEligible = statusKey === "accepted" && !!a.track;
-  const presFeeStatus = a.presentationFeeStatus; // undefined | pending | verified | rejected
-
+  const presFeeStatus = a.presentationFeeStatus;
+  
   const li = document.createElement("li");
   li.className = "flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3";
   li.innerHTML = `

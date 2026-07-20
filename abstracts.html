@@ -270,6 +270,22 @@
     </div>
   </div>
 </div>
+
+<!-- Transaction detail modal -->
+<div data-trx-detail-modal class="hidden fixed inset-0 z-50 bg-slate-900/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-6 sm:p-8">
+    <div class="flex items-start justify-between mb-4">
+      <h3 data-trx-detail-title class="text-lg font-bold text-slate-900">Transaction</h3>
+      <button type="button" data-close-trx-detail-modal class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+    </div>
+    <div data-trx-detail-body class="space-y-3 text-sm"></div>
+    <div class="flex justify-end mt-6">
+      <button type="button" data-close-trx-detail-modal class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 transition">Close</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- Send status email modal -->
 <div data-email-modal class="hidden fixed inset-0 z-50 bg-slate-900/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
   <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">

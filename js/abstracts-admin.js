@@ -16,6 +16,14 @@ import {
 } from "./firebase-config.js";
 import { syncAbstractReviewView } from "./abstract-review-sync.js";
 
+import {
+  getAbstractTrx, verifyAbstractTrx, unverifyAbstractTrx,
+  getPresentationTrx, verifyPresentationTrx,
+  getObserverTrx, verifyObserverTrx,
+  TRX_STATUS_LABEL, TRX_STATUS_STYLE,
+} from "./trx-helpers.js";
+
+let observerTrxByUid = {};
 let allAbstracts = [];
 let filtered = [];
 let activeAbstractId = null;
@@ -48,7 +56,8 @@ guardPage({
   onReady: async (user, profile) => {
     renderTopbar("admin", { isAdmin: true });
     attachLogout("logoutBtn");
-    await Promise.all([loadAbstracts(), loadReviewerPool(), loadReviews(), loadGlobalCertSetting()]);
+    await loadAbstracts();
+    await Promise.all([loadReviewerPool(), loadReviews(), loadGlobalCertSetting(), loadObserverTrxs()]);
     renderStats();
     wireControls();
     document.getElementById("loadingState").classList.add("hidden");
@@ -56,6 +65,11 @@ guardPage({
   },
 });
 
+async function loadObserverTrxs() {
+  const uids = [...new Set(allAbstracts.map((a) => a.submittedBy?.uid).filter(Boolean))];
+  const entries = await Promise.all(uids.map(async (uid) => [uid, await getObserverTrx(uid)]));
+  observerTrxByUid = Object.fromEntries(entries.filter(([, trx]) => trx));
+}
 async function loadAbstracts() {
   const snap = await getDocs(collection(db, ABSTRACTS_COLLECTION));
   allAbstracts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -151,7 +165,12 @@ function wireControls() {
     btn.addEventListener("click", closeEmailModal)
   );
   document.querySelector("[data-send-email]").addEventListener("click", sendStatusEmail);
-  // Global certificate toggle
+  
+  document.querySelectorAll("[data-close-trx-detail-modal]").forEach((btn) =>
+  btn.addEventListener("click", () => document.querySelector("[data-trx-detail-modal]").classList.add("hidden"))
+);
+
+// Global certificate toggle
   document.querySelector("[data-global-cert-toggle]")?.addEventListener("change", (e) => {
     saveGlobalCertSetting(e.target.checked);
   });
@@ -352,25 +371,11 @@ function renderTable() {
 <td class="px-4 py-3 max-w-xs">
             <div class="font-medium text-slate-900 truncate">${escapeHtml(submitterName)}</div>
             <div class="text-slate-600 truncate">${escapeHtml(a.abstract?.title || "Untitled")}${certBadge(a)}</div>
-        <div class="mt-1 space-y-1">
-  ${a.paymentInfo?.transactionId
-    ? `<div class="flex items-center gap-1.5 text-xs">
-         <span class="text-emerald-600 font-semibold truncate">Abstract TXN: ${escapeHtml(a.paymentInfo.transactionId)}</span>
-         ${a.paymentInfo.verified
-           ? `<span class="text-emerald-600" title="Verified">✔</span>`
-           : `<button data-action="verify-payment" data-id="${a.id}" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Verify</button>`}
-       </div>`
-    : `<div class="text-xs text-slate-400">No abstract TXN</div>`}
-  ${a.presentationTrackTrxId
-    ? `<div class="flex items-center gap-1.5 text-xs">
-         <span class="text-indigo-600 font-semibold truncate">Presentation TXN: ${escapeHtml(a.presentationTrackTrxId)}</span>
-         ${a.presentationFeeStatus === "verified"
-           ? `<span class="text-emerald-600" title="Verified">✔</span>`
-           : `<button data-action="verify-presentation" data-id="${a.id}" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Verify</button>`}
-       </div>`
-    : ""}
-</div>
-  </td>
+     
+           ${trxRowHtml(a)}
+ 
+
+</td>
                     <td class="px-4 py-3 text-slate-600 hidden lg:table-cell whitespace-nowrap">${escapeHtml(a.abstractType?.speciality || "—")}</td>
           <td class="px-4 py-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_STYLE[statusKey] || "bg-slate-100 text-slate-600"}">${STATUS_LABEL[statusKey] || statusKey}</span></td>
           <td class="px-4 py-3">${a.track ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700">${TRACK_LABEL[a.track] || a.track}</span>` : `<span class="text-xs text-slate-400">—</span>`}</td>
@@ -399,37 +404,121 @@ function renderTable() {
 tbody.querySelectorAll('[data-action="status"]').forEach((btn) => btn.addEventListener("click", () => openStatusModal(btn.dataset.id)));
   tbody.querySelectorAll('[data-action="reviewers"]').forEach((btn) => btn.addEventListener("click", () => openReviewersModal(btn.dataset.id)));
 tbody.querySelectorAll('[data-action="email"]').forEach((btn) => btn.addEventListener("click", () => openEmailModal(btn.dataset.id)));
-tbody.querySelectorAll('[data-action="verify-payment"]').forEach((btn) => btn.addEventListener("click", () => verifyAbstractPayment(btn.dataset.id)));
-tbody.querySelectorAll('[data-action="verify-presentation"]').forEach((btn) => btn.addEventListener("click", () => verifyPresentationFee(btn.dataset.id)));
+
+
+tbody.querySelectorAll('[data-action="verify-trx"]').forEach((btn) => btn.addEventListener("click", () => handleVerifyTrx(btn.dataset.type, btn.dataset.ref)));
+tbody.querySelectorAll('[data-action="unverify-trx"]').forEach((btn) => btn.addEventListener("click", () => handleUnverifyTrx(btn.dataset.type, btn.dataset.ref)));
+tbody.querySelectorAll('[data-action="view-trx"]').forEach((btn) => btn.addEventListener("click", () => openTrxDetailModal(btn.dataset.type, btn.dataset.ref)));
 
 }
-async function verifyAbstractPayment(id) {
-  const a = allAbstracts.find((x) => x.id === id);
-  if (!a) return;
+
+function trxRowHtml(a) {
+  const abs = getAbstractTrx(a);
+  const pres = getPresentationTrx(a);
+  const obs = observerTrxByUid[a.submittedBy?.uid];
+
+  const rows = [];
+  if (abs) rows.push(trxLineHtml("Abstract", abs.transactionId, abs.status, a.id, "abstract"));
+  if (pres) rows.push(trxLineHtml("Presentation", pres.transactionId, pres.status, a.id, "presentation"));
+  if (obs) rows.push(trxLineHtml("Observer", obs.transactionId, obs.status, a.submittedBy?.uid, "observer"));
+
+  return rows.length ? `<div class="mt-1 space-y-1">${rows.join("")}</div>` : "";
+}
+
+function trxLineHtml(label, trxId, status, ref, type) {
+  const style = TRX_STATUS_STYLE[status] || "bg-slate-100 text-slate-600";
+  const statusLabel = TRX_STATUS_LABEL[status] || status;
+  const verifyBtn = status === "verified"
+    ? `<span class="text-emerald-600" title="Verified">✔</span>`
+    : `<button data-action="verify-trx" data-type="${type}" data-ref="${ref}" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Verify</button>`;
+  // Temporary — remove once verification flow is confirmed stable.
+  const undoBtn = type === "abstract" && status === "verified"
+    ? `<button data-action="unverify-trx" data-type="${type}" data-ref="${ref}" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition">Undo</button>`
+    : "";
+  return `
+    <div class="flex items-center gap-1.5 text-xs">
+      <span class="font-semibold text-slate-500">${label}:</span>
+      <button data-action="view-trx" data-type="${type}" data-ref="${ref}" class="font-mono text-brand-700 hover:underline truncate">${escapeHtml(trxId)}</button>
+      <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold ${style}">${statusLabel}</span>
+      ${verifyBtn}${undoBtn}
+    </div>`;
+}
+
+
+async function handleVerifyTrx(type, ref) {
   try {
-    await updateDoc(doc(db, ABSTRACTS_COLLECTION, id), { "paymentInfo.verified": true, updatedAt: serverTimestamp() });
-    if (a.paymentInfo) a.paymentInfo.verified = true;
+    if (type === "abstract") {
+      const a = allAbstracts.find((x) => x.id === ref);
+      await verifyAbstractTrx(ref, a);
+      a.abstractTrxStatus = "verified";
+      a.status = "submitted";
+    } else if (type === "presentation") {
+      await verifyPresentationTrx(ref);
+      const a = allAbstracts.find((x) => x.id === ref);
+      if (a) a.presentationFeeStatus = "verified";
+    } else if (type === "observer") {
+      await verifyObserverTrx(ref);
+      if (observerTrxByUid[ref]) observerTrxByUid[ref].status = "verified";
+    }
     applyFilters();
-    showToast(`${a.reviewKey} abstract payment verified.`, "success");
+    renderStats();
+    showToast("Transaction verified.", "success");
   } catch (err) {
     console.error(err);
-    showToast("Failed to verify payment. Please try again.", "error");
+    showToast("Failed to verify transaction. Please try again.", "error");
   }
 }
 
-async function verifyPresentationFee(id) {
-  const a = allAbstracts.find((x) => x.id === id);
+// Temporary — remove once verification flow is confirmed stable.
+async function handleUnverifyTrx(type, ref) {
+  if (type !== "abstract") return; // only abstract fee verification is reversible for now
+  const a = allAbstracts.find((x) => x.id === ref);
   if (!a) return;
   try {
-    await updateDoc(doc(db, ABSTRACTS_COLLECTION, id), { presentationFeeStatus: "verified", updatedAt: serverTimestamp() });
-    a.presentationFeeStatus = "verified";
+    await unverifyAbstractTrx(ref, a);
+    a.abstractTrxStatus = "pending";
+    a.status = "pending_payment_verification";
     applyFilters();
-    showToast(`${a.reviewKey} presentation fee verified.`, "success");
+    renderStats();
+    showToast("Verification undone.", "success");
   } catch (err) {
     console.error(err);
-    showToast("Failed to verify presentation fee. Please try again.", "error");
+    showToast("Failed to undo verification. Please try again.", "error");
   }
 }
+
+function openTrxDetailModal(type, ref) {
+  let title, rows;
+  if (type === "abstract") {
+    const a = allAbstracts.find((x) => x.id === ref);
+    const trx = getAbstractTrx(a);
+    title = "Abstract Processing Fee";
+    rows = [["Review Key", a.reviewKey], ["Transaction ID", trx.transactionId], ["Account", trx.account], ["Status", TRX_STATUS_LABEL[trx.status] || trx.status]];
+  } else if (type === "presentation") {
+    const a = allAbstracts.find((x) => x.id === ref);
+    const trx = getPresentationTrx(a);
+    title = "Presentation Fee";
+    rows = [["Review Key", a.reviewKey], ["Transaction ID", trx.transactionId], ["Status", TRX_STATUS_LABEL[trx.status] || trx.status]];
+  } else {
+    const trx = observerTrxByUid[ref];
+    title = "Observer Registration Fee";
+    rows = [
+      ["Category", trx.categoryLabel],
+      ["Payable Fee", trx.payableFee != null ? `PKR ${trx.payableFee.toLocaleString()}` : "—"],
+      ["Transaction ID", trx.transactionId],
+      ["Status", TRX_STATUS_LABEL[trx.status] || trx.status],
+    ];
+  }
+
+  document.querySelector("[data-trx-detail-title]").textContent = title;
+  document.querySelector("[data-trx-detail-body]").innerHTML = rows
+    .map(([label, value]) => `<div><p class="text-xs text-slate-400 uppercase tracking-wide">${label}</p><p class="font-semibold text-slate-900">${escapeHtml(value ?? "—")}</p></div>`)
+    .join("");
+  document.querySelector("[data-trx-detail-modal]").classList.remove("hidden");
+}
+
+
+
 function openViewModal(id) {
   const a = allAbstracts.find((x) => x.id === id);
   if (!a) return;

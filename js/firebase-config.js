@@ -16,7 +16,8 @@ import {
   getFirestore,
   doc,
   setDoc,
-  getDoc,
+   addDoc,          // <-- add this
+ getDoc,
   updateDoc,
   collection,
   getDocs,
@@ -51,6 +52,7 @@ const ABSTRACTS_COLLECTION = "abstracts";
 const ABSTRACT_REVIEWS_COLLECTION = "abstractReviewViews";
 // Small collection for app-wide switches, e.g. settings/global -> { certificatesIssuedToAll }
 const SETTINGS_COLLECTION = "settings";
+export const CPACK_ISSUANCES_COLLECTION = "cpackIssuances";
 
 export {
   app,
@@ -65,7 +67,8 @@ export {
   confirmPasswordReset,
   doc,
   setDoc,
-  getDoc,
+    addDoc,          // <-- add this
+getDoc,
   updateDoc,
   collection,
   getDocs,

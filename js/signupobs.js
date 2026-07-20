@@ -133,7 +133,7 @@ form.addEventListener("submit", async (e) => {
       phone: data.phone,
       cnic: data.cnic,
       organization: data.organization,
-      role: "participant",
+      role: "observer",
       status: "pending", // pending | approved | blocked
       serial: null, // assigned by admin only upon approval
       createdAt: serverTimestamp(),
