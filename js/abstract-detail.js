@@ -98,9 +98,41 @@ function render(a) {
   document.getElementById("submitterField").textContent = [p.fieldOfStudy, p.yearOfStudy].filter(Boolean).join(" · ") || "—";
   document.getElementById("submitterLocation").textContent = [p.city, p.province].filter(Boolean).join(", ") || "—";
 
+  document.getElementById("submitterLocation").textContent = [p.city, p.province].filter(Boolean).join(", ") || "—";
+document.getElementById("submitterAmbassadorCode").textContent = p.ambassadorCode || "—";
+
   document.getElementById("speciality").textContent = t.speciality || "—";
   document.getElementById("subSpeciality").textContent = t.subSpeciality || "—";
   document.getElementById("abstractType").textContent = t.abstractType || "—";
+
+  document.getElementById("abstractType").textContent = t.abstractType || "—";
+document.getElementById("typeOfStudy").textContent = t.typeOfStudy || "—";
+
+const categoriesEl = document.getElementById("abstractCategories");
+categoriesEl.innerHTML = "";
+(t.abstractCategories || []).forEach((c) => {
+  const chip = document.createElement("span");
+  chip.className = "inline-block bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full";
+  chip.textContent = c;
+  categoriesEl.appendChild(chip);
+});
+
+const rd = a.researchDetails || {};
+document.getElementById("facultyMentor").textContent = rd.facultyMentor || "—";
+document.getElementById("publishedInJournal").textContent = rd.publishedInJournal || "—";
+document.getElementById("modeOfPresentation").textContent = rd.modeOfPresentation || "—";
+document.getElementById("followUpInterviews").textContent = rd.followUpInterviews || "—";
+document.getElementById("biggestChallenges").textContent = ab.biggestChallenges || "—";
+
+const trx = a.abstractTrx || {};
+document.getElementById("paymentTrxId").textContent = trx.transactionId || "—";
+document.getElementById("paymentAccountInfo").textContent = trx.account ? `${trx.account.name} (${trx.account.title})` : "—";
+document.getElementById("paymentSubmittedAt").textContent = trx.submittedAt?.seconds
+  ? new Date(trx.submittedAt.seconds * 1000).toLocaleString()
+  : "—";
+
+
+if (!(t.abstractCategories || []).length) categoriesEl.textContent = "—";
 
   document.getElementById("introduction").textContent = ab.introduction || "—";
   document.getElementById("objectives").textContent = ab.objectives || "—";

@@ -15,12 +15,10 @@ import { showAlert, hideAlert, setButtonLoading } from "./helpers.js";
 const MAX_FILE_MB = 5;
 
 const CATEGORIES = [
-  { id: "ug_uo", label: "Undergraduate — Underprivileged Observer", regularFee: 800, ambassadorFee: 600, presenter: false, certType: "E-Certificate (CME Accredited)" },
-  { id: "ug_up", label: "Undergraduate — Underprivileged Presenter", regularFee: 1500, ambassadorFee: null, presenter: true, certType: "Physical Certificate (CME Accredited)" },
+  { id: "ug_uo", label: "Undergraduate — Standard Observer", regularFee: 800, ambassadorFee: 600, presenter: false, certType: "E-Certificate (CME Accredited)" },
   { id: "ug_po", label: "Undergraduate — Premium Observer", regularFee: 2000, ambassadorFee: 1800, presenter: false, certType: "E-Certificate (CME Accredited)" },
-  { id: "ug_pp", label: "Undergraduate — Premium Presenter", regularFee: 3000, ambassadorFee: 2700, presenter: true, certType: "Physical Certificate (CME Accredited)" },
   { id: "pg_o", label: "Postgraduate Observer", regularFee: 3300, ambassadorFee: null, presenter: false, certType: "E-Certificate (CME Accredited)" },
-  { id: "pg_p", label: "Postgraduate Presenter", regularFee: 4000, ambassadorFee: null, presenter: true, certType: "Physical Certificate (CME Accredited)" },
+ 
 ];
 
 const state = {

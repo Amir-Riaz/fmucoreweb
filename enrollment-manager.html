@@ -44,68 +44,68 @@
         </p>
       </div>
 
-      <input
-        id="searchInput" type="text" placeholder="Search by name or email..."
-        class="px-3.5 py-2 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm w-full sm:w-72"
-      />
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <input
+          id="searchInput" type="text" placeholder="Search by name or email..."
+          class="px-3.5 py-2 rounded-lg border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition text-sm w-full sm:w-72"
+        />
+        <button
+          id="checkDuplicatesBtn" type="button"
+          class="shrink-0 px-3.5 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm font-semibold hover:bg-amber-100 transition whitespace-nowrap"
+        >
+          Check for duplicate TRX IDs
+        </button>
+      </div>
     </div>
 
-    <!-- Pending list -->
-    <section class="mb-8">
-      <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-        Pending Approval
-        <span id="pendingCount" class="text-slate-400 font-medium normal-case">(0)</span>
-      </h2>
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 border-b border-slate-200">
-              <tr class="text-left text-slate-500 text-xs uppercase tracking-wider">
-                <th class="px-4 py-3 font-semibold">Name</th>
-                <th class="px-4 py-3 font-semibold">Email</th>
-                <th class="px-4 py-3 font-semibold hidden md:table-cell">Organization</th>
-                <th class="px-4 py-3 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="pendingTableBody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-        <div id="pendingEmptyState" class="hidden py-10 text-center text-slate-400 text-sm">
-          No pending participants.
-        </div>
-      </div>
-    </section>
-
-    <!-- Approved list -->
+    <!-- Single participants table: approval status + fee verification together -->
     <section>
       <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-green-500"></span>
-        Approved
-        <span id="approvedCount" class="text-slate-400 font-medium normal-case">(0)</span>
+        <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+        Participants
+        <span id="participantsCount" class="text-slate-400 font-medium normal-case">(0)</span>
       </h2>
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-slate-50 border-b border-slate-200">
               <tr class="text-left text-slate-500 text-xs uppercase tracking-wider">
-                <th class="px-4 py-3 font-semibold">Name</th>
-                <th class="px-4 py-3 font-semibold">Email</th>
-                <th class="px-4 py-3 font-semibold hidden md:table-cell">Organization</th>
-                <th class="px-4 py-3 font-semibold">Approved By</th>
+                <th class="px-4 py-3 font-semibold w-64">Participant</th>
+                <th class="px-4 py-3 font-semibold w-40">Approval</th>
+                <th class="px-4 py-3 font-semibold">Fees</th>
               </tr>
             </thead>
-            <tbody id="approvedTableBody" class="divide-y divide-slate-100"></tbody>
+            <tbody id="participantsTableBody" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
-        <div id="approvedEmptyState" class="hidden py-10 text-center text-slate-400 text-sm">
-          No approved participants yet.
+        <div id="participantsEmptyState" class="hidden py-10 text-center text-slate-400 text-sm">
+          No participants match your search.
         </div>
       </div>
     </section>
 
   </main>
 
+  </main>
+
+  <!-- Duplicate transaction ID scan results -->
+  <div id="duplicatesModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-2xl p-6 sm:p-8 my-8">
+      <div class="flex items-start justify-between mb-1">
+        <h3 class="text-lg font-extrabold text-slate-900">Duplicate Transaction IDs</h3>
+        <button type="button" id="closeDuplicatesModal" class="text-slate-400 hover:text-slate-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <p class="text-sm text-slate-500 mb-5">Scans every abstract fee, presentation fee, and observer fee transaction ID for reuse across submissions.</p>
+
+      <div id="duplicatesList" class="space-y-4 max-h-[60vh] overflow-y-auto"></div>
+      <p id="duplicatesEmptyState" class="hidden text-sm text-slate-400 text-center py-8">No duplicate transaction IDs found. Everything checks out.</p>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 max-w-xs px-4 py-3 rounded-lg shadow-lg text-sm font-medium"></div>
+  
   <div id="toast" class="hidden fixed bottom-5 right-5 z-50 max-w-xs px-4 py-3 rounded-lg shadow-lg text-sm font-medium"></div>
 
   <script type="module" src="js/enrollment-manager.js"></script>

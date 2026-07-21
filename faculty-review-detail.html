@@ -56,7 +56,6 @@
         <span id="reviewKey" class="font-mono text-xs font-bold text-brand-700"></span>
       </div>
       <h1 id="title" class="text-2xl font-extrabold text-slate-900 mb-4"></h1>
-      <p class="text-xs text-slate-400">Submitter identity is not shown to reviewers.</p>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
@@ -65,7 +64,11 @@
         <div><p class="text-xs font-semibold text-slate-400 mb-1">Speciality</p><p id="speciality" class="text-slate-700"></p></div>
         <div><p class="text-xs font-semibold text-slate-400 mb-1">Sub-speciality</p><p id="subSpeciality" class="text-slate-700"></p></div>
         <div><p class="text-xs font-semibold text-slate-400 mb-1">Abstract type</p><p id="abstractType" class="text-slate-700"></p></div>
-      </div>
+      
+      <div><p class="text-xs font-semibold text-slate-400 mb-1">Type of Study</p><p id="typeOfStudy" class="text-slate-700"></p></div>
+<div class="sm:col-span-2"><p class="text-xs font-semibold text-slate-400 mb-1">Abstract Categories</p><div id="abstractCategories" class="flex flex-wrap gap-2 mt-1"></div></div>
+
+</div>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-4 text-sm">
@@ -79,6 +82,21 @@
         <div id="keywords" class="flex flex-wrap gap-2"></div>
       </div>
     </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-4 text-sm">
+  <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Additional Details</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div><p class="font-bold text-slate-900 mb-1">Faculty Mentor</p><p id="facultyMentor" class="text-slate-600"></p></div>
+    <div><p class="font-bold text-slate-900 mb-1">Published in Journal</p><p id="publishedInJournal" class="text-slate-600"></p></div>
+    <div><p class="font-bold text-slate-900 mb-1">Mode of Presentation</p><p id="modeOfPresentation" class="text-slate-600"></p></div>
+    <div><p class="font-bold text-slate-900 mb-1">Open to Follow-up Interviews</p><p id="followUpInterviews" class="text-slate-600"></p></div>
+  </div>
+  <div>
+    <p class="font-bold text-slate-900 mb-1">Biggest Challenges</p>
+    <p id="biggestChallenges" class="text-slate-600 whitespace-pre-wrap"></p>
+  </div>
+</div>
+
 
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
   <p class="font-bold text-slate-900 mb-3">Figures</p>

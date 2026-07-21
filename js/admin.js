@@ -301,6 +301,7 @@ function renderTable() {
   wireRowActions();
 }
 
+
 async function openTransactionsModal(uid) {
   const u = allUsers.find((x) => x.id === uid);
   if (!u) return;
@@ -316,12 +317,44 @@ async function openTransactionsModal(uid) {
   const sections = [];
   abstracts.forEach((a) => {
     const abs = getAbstractTrx(a);
-    if (abs) sections.push(trxSectionHtml(`Abstract Fee — ${a.reviewKey}`, abs.transactionId, abs.status, "abstract", a.id));
+    if (abs) {
+      sections.push(trxSectionHtml({
+        label: `Abstract Fee — ${a.reviewKey}`,
+        trxId: abs.transactionId,
+        status: abs.status,
+        type: "abstract",
+        ref: a.id,
+        account: abs.account,
+      }));
+    }
     const pres = getPresentationTrx(a);
-    if (pres) sections.push(trxSectionHtml(`Presentation Fee — ${a.reviewKey}`, pres.transactionId, pres.status, "presentation", a.id));
+    if (pres) {
+      sections.push(trxSectionHtml({
+        label: `Presentation Fee — ${a.reviewKey}`,
+        trxId: pres.transactionId,
+        status: pres.status,
+        type: "presentation",
+        ref: a.id,
+        category: a.presentationCategoryLabel,
+        fee: a.presentationFee,
+        account: a.presentationPaymentAccount,
+      }));
+    }
   });
   if (observerTrx) {
-    sections.push(trxSectionHtml("Observer Registration Fee", observerTrx.transactionId, observerTrx.status, "observer", uid));
+    sections.push(trxSectionHtml({
+      label: "Observer Registration Fee",
+      trxId: observerTrx.transactionId,
+      status: observerTrx.status,
+      type: "observer",
+      ref: uid,
+      category: observerTrx.categoryLabel,
+      fee: observerTrx.payableFee,
+      regularFee: observerTrx.regularFee,
+      discountApplied: observerTrx.discountApplied,
+      ambassadorCode: observerTrx.ambassadorCode,
+      account: observerTrx.paymentAccount,
+    }));
   }
 
   body.innerHTML = sections.length ? sections.join("") : `<p class="text-sm text-slate-400">No transactions found for this participant.</p>`;
@@ -331,24 +364,51 @@ async function openTransactionsModal(uid) {
   });
 }
 
-function trxSectionHtml(label, trxId, status, type, ref) {
+function trxSectionHtml({ label, trxId, status, type, ref, category, fee, regularFee, discountApplied, ambassadorCode, account }) {
   const style = TRX_STATUS_STYLE[status] || "bg-slate-100 text-slate-600";
   const statusLabel = TRX_STATUS_LABEL[status] || status;
   const verifyBtn = status === "verified"
     ? `<span class="text-emerald-600 text-xs font-bold" title="Verified">✔ Verified</span>`
     : `<button data-action="verify-trx" data-type="${type}" data-ref="${ref}" class="px-2.5 py-1 rounded text-xs font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Verify</button>`;
+
+  const accountLabel = account
+    ? `${escapeHtml(account.name || "—")} — ${escapeHtml(account.title || "—")} (${escapeHtml(account.accountNumber || "—")})`
+    : null;
+
+  const detailRows = [];
+  if (category) detailRows.push(["Category", category]);
+  if (regularFee != null) detailRows.push(["Regular Fee", `PKR ${regularFee.toLocaleString()}`]);
+  if (discountApplied) detailRows.push(["Discount Applied", `Yes${ambassadorCode ? ` (code: ${ambassadorCode})` : ""}`]);
+  if (fee != null) detailRows.push(["Payable Fee", `PKR ${fee.toLocaleString()}`]);
+  if (accountLabel) detailRows.push(["Paid To", accountLabel]);
+
+  const detailsHtml = detailRows.length
+    ? `<div class="mt-2.5 pt-2.5 border-t border-slate-200 grid grid-cols-2 gap-x-3 gap-y-2">
+        ${detailRows.map(([k, v]) => `
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase tracking-wide text-slate-400 font-semibold">${k}</p>
+            <p class="text-xs font-semibold text-slate-700 break-words">${escapeHtml(String(v))}</p>
+          </div>`).join("")}
+      </div>`
+    : "";
+
   return `
-    <div class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-      <div class="min-w-0">
-        <p class="font-bold text-sm text-slate-900">${escapeHtml(label)}</p>
-        <p class="text-xs font-mono text-slate-500 mt-0.5">${escapeHtml(trxId)}</p>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-bold text-sm text-slate-900">${escapeHtml(label)}</p>
+          <p class="text-xs font-mono text-slate-500 mt-0.5">${escapeHtml(trxId)}</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${style}">${statusLabel}</span>
+          ${verifyBtn}
+        </div>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${style}">${statusLabel}</span>
-        ${verifyBtn}
-      </div>
+      ${detailsHtml}
     </div>`;
 }
+
+
 
 
 async function handleVerifyTrxFromModal(type, ref, uid) {

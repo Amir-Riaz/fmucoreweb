@@ -84,10 +84,16 @@ setupObserverRegistration(user, profile);
     document.getElementById("content").classList.remove("hidden");
   },
 });
+
 const OBSERVER_STATUS_LABEL = {
   submitted: "Awaiting Observer Payment Verification",
   verified: "Observer Registration Confirmed",
   rejected: "Payment Not Verified",
+};
+const OBSERVER_STATUS_BADGE_STYLE = {
+  submitted: "bg-amber-50 text-amber-700",
+  verified: "bg-lime/90 text-brand-900",
+  rejected: "bg-red-50 text-red-700",
 };
 
 
@@ -99,13 +105,14 @@ function setupObserverRegistration(user, profile) {
   const badge = document.getElementById("observerStatusBadge");
 
   if (profile.observerRegistered) {
-    // Already registered — show the status badge in the welcome card,
-    // and turn the tile into a popup trigger instead of a link back to the form.
     if (badge) {
       cpackRow?.classList.remove("hidden");
       badge.classList.remove("hidden");
       const label = OBSERVER_STATUS_LABEL[profile.observerStatus] || "Observer Registration Submitted";
       badge.textContent = profile.observerStatus === "verified" ? `✔ ${label}` : label;
+      badge.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold ${
+        OBSERVER_STATUS_BADGE_STYLE[profile.observerStatus] || "bg-white/15 text-white"
+      }`;
     }
 
     if (tile) {
@@ -125,8 +132,17 @@ function setupObserverRegistration(user, profile) {
     return;
   }
 
-  // Not registered yet — show the plain CTA tile for existing participants
-  if (tile) tile.classList.remove("hidden");
+
+ if (tile) {
+    tile.classList.remove("hidden");
+    if (profile.role === "observer") {
+      const titleEl = document.getElementById("registerObserverTileTitle");
+      const descEl = document.getElementById("registerObserverTileDesc");
+      if (titleEl) titleEl.textContent = "Resume Observer Registration";
+      if (descEl) descEl.textContent = "You haven't finished your registration — pick your category and submit payment to attend.";
+    }
+  }
+
 }
 
 async function openObserverRegModal(user, profile) {

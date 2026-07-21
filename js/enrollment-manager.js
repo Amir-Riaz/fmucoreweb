@@ -2,9 +2,16 @@
 // FMUCORE — Enrollment Manager
 // Scoped-down version of admin.js: lists participants and lets
 // an enrolmngr-flagged (non-admin) account approve registrations
-// only. Approval is one-way from this screen (no unapprove) —
-// mirrors the Cpack issuance pattern in admin.js. No block,
-// cpack, or permissions controls here.
+// and verify fee transactions (abstract, presentation, observer).
+// Approval is one-way from this screen (no unapprove) — mirrors
+// the Cpack issuance pattern in admin.js. No block, cpack, or
+// permissions controls here.
+//
+// Participants and their fee transactions are shown in a single
+// merged table (one row per participant) rather than two separate
+// lists, so an already-approved participant who later submits a
+// transaction still shows up with that transaction attached to
+// them, in the same place as anyone still pending approval.
 // ============================================================
 
 import { guardPage, attachLogout } from "./auth-guard.js";
@@ -17,22 +24,18 @@ import {
   updateDoc,
   serverTimestamp,
   USERS_COLLECTION,
-  ABSTRACTS_COLLECTION,          // NEW
-  OBSERVER_REGISTRATIONS_COLLECTION, // NEW
+  ABSTRACTS_COLLECTION,
+  OBSERVER_REGISTRATIONS_COLLECTION,
 } from "./firebase-config.js";
 import { generateSerial } from "./helpers.js";
 import { syncPassDoc } from "./pass-sync.js";
 import {
-  getAbstractTrxId,
-  isAbstractTrxVerified,
-  verifyAbstractPaymentTrx,
-  getPresentationTrxId,
-  getPresentationTrxStatus,
-  verifyPresentationFeeTrx,
-  getObserverTrxId,
-  getObserverTrxStatus,
-  verifyObserverRegistrationTrx,
-} from "./trx-helpers.js"; // NEW
+  getAbstractTrx,
+  verifyAbstractTrx as verifyAbstractFeeTrx,
+  getPresentationTrx,
+  verifyPresentationTrx as verifyPresentationFeeTrx,
+  verifyObserverTrx as verifyObserverRegistrationTrx,
+} from "./trx-helpers.js";
 
 let allAbstracts = [];
 let observerRegByUid = {};
@@ -52,9 +55,9 @@ guardPage({
 
     renderTopbar("enrollment-manager", { isAdmin: false });
     attachLogout("logoutBtn");
-   await loadUsers();
-await loadTransactions();
-wireControls();
+    await loadUsers();
+    await loadTransactions();
+    wireControls();
 
     document.getElementById("loadingState").classList.add("hidden");
     document.getElementById("content").classList.remove("hidden");
@@ -69,104 +72,240 @@ async function loadTransactions() {
   allAbstracts = absSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   observerRegByUid = {};
   obsSnap.docs.forEach((d) => { observerRegByUid[d.id] = d.data(); });
-  renderTransactions();
+  renderParticipants();
 }
+
 async function loadUsers() {
   const snap = await getDocs(collection(db, USERS_COLLECTION));
   allUsers = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   allUsers.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   document.getElementById("totalCount").textContent = allUsers.length;
-  renderLists();
+  renderParticipants();
 }
 
 function wireControls() {
-  document.getElementById("searchInput").addEventListener("input", renderLists);
+  document.getElementById("searchInput").addEventListener("input", renderParticipants);
+  document.getElementById("checkDuplicatesBtn").addEventListener("click", showDuplicatesModal);
+  document.getElementById("closeDuplicatesModal").addEventListener("click", hideDuplicatesModal);
+}
+function hideDuplicatesModal() {
+  document.getElementById("duplicatesModal").classList.add("hidden");
 }
 
-function renderTransactions() {
-  const tbody = document.getElementById("transactionsTableBody");
-  const emptyState = document.getElementById("transactionsEmptyState");
-  const rows = [];
+function showDuplicatesModal() {
+  const feesByUid = buildFeesByUid();
+
+  // Flatten every transaction across every participant into one list, then
+  // group by the raw trxId. Case/whitespace-insensitive so "TXN123 " and
+  // "txn123" are still caught as the same id.
+  const entries = [];
+  Object.entries(feesByUid).forEach(([uid, fees]) => {
+    const user = allUsers.find((u) => u.id === uid);
+    fees.abstractItems.forEach((fee) => {
+      entries.push({ uid, user, fee });
+    });
+    if (fees.observerFee) {
+      entries.push({ uid, user, fee: fees.observerFee });
+    }
+  });
+
+  const byTrxId = {};
+  entries.forEach((entry) => {
+    const key = (entry.fee.trxId || "").trim().toLowerCase();
+    if (!key) return;
+    if (!byTrxId[key]) byTrxId[key] = [];
+    byTrxId[key].push(entry);
+  });
+
+  const duplicateGroups = Object.values(byTrxId).filter((group) => group.length > 1);
+
+  const list = document.getElementById("duplicatesList");
+  const emptyState = document.getElementById("duplicatesEmptyState");
+  list.innerHTML = "";
+
+  if (duplicateGroups.length === 0) {
+    emptyState.classList.remove("hidden");
+  } else {
+    emptyState.classList.add("hidden");
+    duplicateGroups.forEach((group) => {
+      const card = document.createElement("div");
+      card.className = "rounded-xl border-2 border-red-200 bg-red-50 p-4";
+
+      const header = document.createElement("p");
+      header.className = "font-mono text-xs font-bold text-red-700 mb-3";
+      header.textContent = `Transaction ID: ${group[0].fee.trxId} — used ${group.length} times`;
+      card.appendChild(header);
+
+      const rows = document.createElement("div");
+      rows.className = "space-y-2";
+      group.forEach(({ user, fee }) => {
+        const row = document.createElement("div");
+        row.className = "bg-white rounded-lg border border-red-100 px-3 py-2";
+        row.innerHTML = `
+          <p class="font-semibold text-sm text-slate-900">${escapeHtml(user?.fullName || "—")} <span class="text-slate-400 font-normal">(${escapeHtml(user?.email || "—")})</span></p>
+          <p class="text-xs text-slate-600 mt-0.5">${escapeHtml(fee.label)}${fee.title ? ` — ${escapeHtml(fee.title)}` : ""}</p>`;
+        rows.appendChild(row);
+      });
+      card.appendChild(rows);
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById("duplicatesModal").classList.remove("hidden");
+}
+// Builds { uid -> { observerFee, abstractItems: [{label, trxId, title, verified, verifyFn}] } }
+function buildFeesByUid() {
+  const byUid = {};
+  const ensure = (uid) => {
+    if (!byUid[uid]) byUid[uid] = { observerFee: null, abstractItems: [] };
+    return byUid[uid];
+  };
 
   Object.entries(observerRegByUid).forEach(([uid, reg]) => {
-    const trxId = getObserverTrxId(reg);
-    if (!trxId) return;
-    const user = allUsers.find((u) => u.id === uid);
-    rows.push({
-      type: "Observer Registration",
-      name: user?.fullName || "—",
-      trxId,
-      verified: getObserverTrxStatus(reg) === "verified",
+    if (!reg.obstrxid) return;
+    ensure(uid).observerFee = {
+      label: "Observer Fee",
+      trxId: reg.obstrxid,
+      title: null,
+      verified: (reg.status || "submitted") === "verified",
       verifyFn: () => verifyObserverTrx(uid),
-      viewHref: null,
-    });
+    };
   });
 
   allAbstracts.forEach((a) => {
-    const user = allUsers.find((u) => u.id === a.submittedBy?.uid);
-    const name = user?.fullName || `${a.personalInfo?.firstName || ""} ${a.personalInfo?.lastName || ""}`.trim() || "—";
+    const uid = a.submittedBy?.uid;
+    if (!uid) return;
+    const title = a.abstract?.title || null;
 
-    const abTrxId = getAbstractTrxId(a);
-    if (abTrxId) {
-      rows.push({
-        type: `Abstract Fee (${a.reviewKey || a.id})`,
-        name,
-        trxId: abTrxId,
-        verified: isAbstractTrxVerified(a),
+    const abTrx = getAbstractTrx(a);
+    if (abTrx) {
+      ensure(uid).abstractItems.push({
+        label: "Abstract Fee",
+        trxId: abTrx.transactionId,
+        title,
+        verified: abTrx.status === "verified",
         verifyFn: () => verifyAbstractTrx(a.id),
-        viewHref: `abstract-detail.html?id=${encodeURIComponent(a.id)}`,
       });
     }
-    const presTrxId = getPresentationTrxId(a);
-    if (presTrxId) {
-      rows.push({
-        type: `Presentation Fee (${a.reviewKey || a.id})`,
-        name,
-        trxId: presTrxId,
-        verified: getPresentationTrxStatus(a) === "verified",
+
+    const presTrx = getPresentationTrx(a);
+    if (presTrx) {
+      ensure(uid).abstractItems.push({
+        label: "Presentation Fee",
+        trxId: presTrx.transactionId,
+        title,
+        verified: presTrx.status === "verified",
         verifyFn: () => verifyPresentationTrx(a.id),
-        viewHref: `abstract-detail.html?id=${encodeURIComponent(a.id)}`,
       });
     }
   });
 
-  document.getElementById("transactionsCount").textContent = `(${rows.length})`;
+  return byUid;
+}
 
-  if (rows.length === 0) {
+function renderParticipants() {
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const tbody = document.getElementById("participantsTableBody");
+  const emptyState = document.getElementById("participantsEmptyState");
+
+  // Blocked accounts are out of scope for this screen either way.
+  const matchesQuery = (u) =>
+    !q ||
+    (u.fullName || "").toLowerCase().includes(q) ||
+    (u.email || "").toLowerCase().includes(q);
+
+  const participants = allUsers.filter((u) => !u.blocked && matchesQuery(u));
+  const feesByUid = buildFeesByUid();
+
+  document.getElementById("participantsCount").textContent = `(${participants.length})`;
+
+  if (participants.length === 0) {
     tbody.innerHTML = "";
     emptyState.classList.remove("hidden");
     return;
   }
   emptyState.classList.add("hidden");
   tbody.innerHTML = "";
-  rows.forEach((r) => {
+
+  participants.forEach((u) => {
+    const fees = feesByUid[u.id] || { observerFee: null, abstractItems: [] };
+
     const tr = document.createElement("tr");
-    tr.className = "hover:bg-slate-50/60 transition";
-    tr.innerHTML = `
-      <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">${escapeHtml(r.name)}</td>
-      <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${escapeHtml(r.type)}</td>
-      <td class="px-4 py-3 font-mono text-xs text-slate-700">${escapeHtml(r.trxId)}</td>
-      <td class="px-4 py-3 text-right"></td>`;
-    const actionsTd = tr.querySelector("td:last-child");
-    if (r.verified) {
-      actionsTd.innerHTML = `<span class="text-emerald-600 text-xs font-bold">✔ Verified</span>`;
+    tr.className = "align-top hover:bg-slate-50/60 transition";
+
+    // Column 1 — participant identity
+    const participantTd = document.createElement("td");
+    participantTd.className = "px-4 py-3 whitespace-nowrap";
+    participantTd.innerHTML = `
+      <p class="font-medium text-slate-900">${escapeHtml(u.fullName || "—")}</p>
+      <p class="text-slate-500 text-xs mt-0.5">${escapeHtml(u.email || "—")}</p>
+      <p class="text-slate-400 text-xs mt-0.5">${escapeHtml(u.organization || "—")}</p>`;
+    tr.appendChild(participantTd);
+
+    // Column 2 — approval status / action
+    const approvalTd = document.createElement("td");
+    approvalTd.className = "px-4 py-3";
+    if (u.status === "approved") {
+      approvalTd.innerHTML = `
+        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 mb-1">Approved</span>
+        <p class="text-slate-400 text-xs">${escapeHtml(u.approvedByName || "—")}</p>`;
     } else {
       const btn = document.createElement("button");
-      btn.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 hover:bg-amber-50 transition mr-1";
-      btn.textContent = "Verify";
-      btn.addEventListener("click", async () => {
-        await r.verifyFn();
-        await loadTransactions();
-      });
-      actionsTd.appendChild(btn);
+      btn.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold text-green-700 hover:bg-green-50 transition";
+      btn.textContent = "Approve";
+      btn.addEventListener("click", () => handleApprove(u.id));
+      approvalTd.appendChild(btn);
     }
-    if (r.viewHref) {
-      const link = document.createElement("a");
-      link.href = r.viewHref;
-      link.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold text-brand-700 hover:bg-brand-50 transition";
-      link.textContent = "View";
-      actionsTd.appendChild(link);
+    tr.appendChild(approvalTd);
+
+    // Column 3 — fees
+    const feesTd = document.createElement("td");
+    feesTd.className = "px-4 py-3";
+    const list = document.createElement("div");
+    list.className = "space-y-2";
+
+    const renderFeeRow = (fee) => {
+      const row = document.createElement("div");
+      row.className = "flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 px-3 py-2";
+
+      const info = document.createElement("div");
+      info.className = "min-w-0";
+      info.innerHTML = `
+        <p class="text-xs font-semibold text-slate-700">${escapeHtml(fee.label)}</p>
+        <p class="font-mono text-[11px] text-slate-500 truncate">${escapeHtml(fee.trxId)}</p>
+        ${fee.title ? `<p class="text-[11px] text-slate-400 truncate mt-0.5">${escapeHtml(fee.title)}</p>` : ""}`;
+      row.appendChild(info);
+
+      if (fee.verified) {
+        const badge = document.createElement("span");
+        badge.className = "text-emerald-600 text-xs font-bold shrink-0";
+        badge.textContent = "✔ Verified";
+        row.appendChild(badge);
+      } else {
+        const btn = document.createElement("button");
+        btn.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 hover:bg-amber-50 transition shrink-0";
+        btn.textContent = "Verify";
+        btn.addEventListener("click", async () => {
+          await fee.verifyFn();
+          await loadTransactions();
+        });
+        row.appendChild(btn);
+      }
+      return row;
+    };
+
+    fees.abstractItems.forEach((fee) => list.appendChild(renderFeeRow(fee)));
+    if (fees.observerFee) list.appendChild(renderFeeRow(fees.observerFee));
+
+    if (!fees.abstractItems.length && !fees.observerFee) {
+      const none = document.createElement("p");
+      none.className = "text-slate-400 text-xs";
+      none.textContent = "No transactions yet.";
+      list.appendChild(none);
     }
+
+    feesTd.appendChild(list);
+    tr.appendChild(feesTd);
     tbody.appendChild(tr);
   });
 }
@@ -186,9 +325,8 @@ async function verifyAbstractTrx(id) {
   const a = allAbstracts.find((x) => x.id === id);
   if (!a) return;
   try {
-    await verifyAbstractPaymentTrx(id, a);
-    if (a.abstractTrx) a.abstractTrx.verified = true;
-    else if (a.paymentInfo) a.paymentInfo.verified = true;
+    await verifyAbstractFeeTrx(id, a);
+    a.abstractTrxStatus = "verified";
     showToast("Abstract payment verified.", "success");
   } catch (err) {
     console.error(err);
@@ -207,81 +345,6 @@ async function verifyPresentationTrx(id) {
     console.error(err);
     showToast("Failed to verify presentation fee.", "error");
   }
-}
-function renderLists() {
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
-
-  // Blocked accounts are out of scope for enrolment approval either way
-  const inScope = allUsers.filter((u) => !u.blocked);
-  const matchesQuery = (u) =>
-    !q ||
-    (u.fullName || "").toLowerCase().includes(q) ||
-    (u.email || "").toLowerCase().includes(q);
-
-  const pending = inScope.filter((u) => u.status !== "approved" && matchesQuery(u));
-  const approved = inScope.filter((u) => u.status === "approved" && matchesQuery(u));
-
-  renderPending(pending);
-  renderApproved(approved);
-}
-
-function renderPending(list) {
-  const tbody = document.getElementById("pendingTableBody");
-  const emptyState = document.getElementById("pendingEmptyState");
-  document.getElementById("pendingCount").textContent = `(${list.length})`;
-
-  if (list.length === 0) {
-    tbody.innerHTML = "";
-    emptyState.classList.remove("hidden");
-    return;
-  }
-  emptyState.classList.add("hidden");
-
-  tbody.innerHTML = list
-    .map(
-      (u) => `
-        <tr class="hover:bg-slate-50/60 transition">
-          <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">${escapeHtml(u.fullName || "—")}</td>
-          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${escapeHtml(u.email || "—")}</td>
-          <td class="px-4 py-3 text-slate-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(u.organization || "—")}</td>
-          <td class="px-4 py-3 text-right">
-            <button data-action="approve" data-uid="${u.id}"
-              class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-green-700 hover:bg-green-50 transition">
-              Approve
-            </button>
-          </td>
-        </tr>`
-    )
-    .join("");
-
-  tbody.querySelectorAll('[data-action="approve"]').forEach((btn) => {
-    btn.addEventListener("click", () => handleApprove(btn.dataset.uid));
-  });
-}
-
-function renderApproved(list) {
-  const tbody = document.getElementById("approvedTableBody");
-  const emptyState = document.getElementById("approvedEmptyState");
-  document.getElementById("approvedCount").textContent = `(${list.length})`;
-
-  if (list.length === 0) {
-    tbody.innerHTML = "";
-    emptyState.classList.remove("hidden");
-    return;
-  }
-  emptyState.classList.add("hidden");
-
-  tbody.innerHTML = list
-    .map(
-      (u) => `
-        <tr class="hover:bg-slate-50/60 transition">
-          <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">${escapeHtml(u.fullName || "—")}</td>
-          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${escapeHtml(u.email || "—")}</td>
-          <td class="px-4 py-3 text-slate-600 hidden md:table-cell whitespace-nowrap">${escapeHtml(u.organization || "—")}</td>
-          <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">${escapeHtml(u.approvedByName || "—")}</td>
-        </tr>`
-    )
-    .join("");
 }
 
 // Approval is one-way from this screen — no unapprove control here.
@@ -310,7 +373,7 @@ async function handleApprove(uid) {
     await updateDoc(doc(db, USERS_COLLECTION, uid), updates);
     Object.assign(u, updates);
     await syncPassDoc(u);
-    renderLists();
+    renderParticipants();
     showToast(`${u.fullName} approved.`, "success");
   } catch (err) {
     console.error(err);

@@ -73,7 +73,8 @@
         <div><p class="text-slate-400 text-xs mb-0.5">Institute</p><p id="submitterInstitute" class="font-semibold text-slate-900">—</p></div>
         <div><p class="text-slate-400 text-xs mb-0.5">Field / Year</p><p id="submitterField" class="font-semibold text-slate-900">—</p></div>
         <div><p class="text-slate-400 text-xs mb-0.5">Location</p><p id="submitterLocation" class="font-semibold text-slate-900">—</p></div>
-      </div>
+      <div><p class="text-slate-400 text-xs mb-0.5">Ambassador Code</p><p id="submitterAmbassadorCode" class="font-semibold text-slate-900">—</p></div>
+    </div>
     </section>
 
     <!-- Classification -->
@@ -83,9 +84,27 @@
         <div><p class="text-slate-400 text-xs mb-0.5">Speciality</p><p id="speciality" class="font-semibold text-slate-900">—</p></div>
         <div><p class="text-slate-400 text-xs mb-0.5">Sub speciality</p><p id="subSpeciality" class="font-semibold text-slate-900">—</p></div>
         <div><p class="text-slate-400 text-xs mb-0.5">Abstract type</p><p id="abstractType" class="font-semibold text-slate-900">—</p></div>
+      
+      <div><p class="text-slate-400 text-xs mb-0.5">Type of Study</p><p id="typeOfStudy" class="font-semibold text-slate-900">—</p></div>
+<div class="sm:col-span-3"><p class="text-slate-400 text-xs mb-0.5">Abstract Categories</p><div id="abstractCategories" class="flex flex-wrap gap-2 mt-1"></div></div>
+
+      
       </div>
     </section>
 
+    <section class="bg-white rounded-2xl border border-slate-200 p-6 mb-5">
+  <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Research Details</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm mb-4">
+    <div><p class="text-slate-400 text-xs mb-0.5">Faculty Mentor</p><p id="facultyMentor" class="font-semibold text-slate-900">—</p></div>
+    <div><p class="text-slate-400 text-xs mb-0.5">Published in Journal</p><p id="publishedInJournal" class="font-semibold text-slate-900">—</p></div>
+    <div><p class="text-slate-400 text-xs mb-0.5">Mode of Presentation</p><p id="modeOfPresentation" class="font-semibold text-slate-900">—</p></div>
+    <div><p class="text-slate-400 text-xs mb-0.5">Open to Follow-up Interviews</p><p id="followUpInterviews" class="font-semibold text-slate-900">—</p></div>
+  </div>
+  <div>
+    <p class="text-slate-400 text-xs mb-0.5">Biggest Challenges</p>
+    <p id="biggestChallenges" class="text-slate-700 leading-relaxed whitespace-pre-wrap">—</p>
+  </div>
+</section>
     <!-- Abstract content, laid out like a paper -->
     <section class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 mb-5">
       <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-5">Abstract</h2>
@@ -128,6 +147,14 @@
       <ul id="authorsList" class="space-y-3"></ul>
     </section>
 
+    <section class="bg-white rounded-2xl border border-slate-200 p-6 mb-5">
+  <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Payment</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+    <div><p class="text-slate-400 text-xs mb-0.5">Transaction ID</p><p id="paymentTrxId" class="font-semibold text-slate-900">—</p></div>
+    <div><p class="text-slate-400 text-xs mb-0.5">Account Paid To</p><p id="paymentAccountInfo" class="font-semibold text-slate-900">—</p></div>
+    <div><p class="text-slate-400 text-xs mb-0.5">Paid At</p><p id="paymentSubmittedAt" class="font-semibold text-slate-900">—</p></div>
+  </div>
+</section>
     <!-- Status & track — the action panel, deliberately last -->
     <section class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
       <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Change status</h2>

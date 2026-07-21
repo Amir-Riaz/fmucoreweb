@@ -87,6 +87,20 @@ function render(r) {
   document.getElementById("results").textContent = ab.results || "—";
   document.getElementById("conclusion").textContent = ab.conclusion || "—";
 
+  document.getElementById("abstractType").textContent = t.abstractType || "—";
+document.getElementById("typeOfStudy").textContent = t.typeOfStudy || "—";
+
+const categoriesEl = document.getElementById("abstractCategories");
+categoriesEl.innerHTML = "";
+(t.abstractCategories || []).forEach((c) => {
+  const chip = document.createElement("span");
+  chip.className = "inline-block bg-brand-50 text-brand-700 text-xs font-bold px-2.5 py-1 rounded-full";
+  chip.textContent = c;
+  categoriesEl.appendChild(chip);
+});
+if (!(t.abstractCategories || []).length) categoriesEl.textContent = "—";
+
+
   const keywordsEl = document.getElementById("keywords");
   keywordsEl.innerHTML = "";
   (ab.keywords || []).forEach((kw) => {
@@ -97,21 +111,29 @@ function render(r) {
   });
   if (!(ab.keywords || []).length) keywordsEl.textContent = "—";
 
-  document.getElementById("recommendationSelect").value = r.studentReviewDecision || "";
-  document.getElementById("trackSelect").value = r.studentReviewTrack || "";
+  const rd = r.researchDetails || {};
+document.getElementById("facultyMentor").textContent = rd.facultyMentor || "—";
+document.getElementById("publishedInJournal").textContent = rd.publishedInJournal || "—";
+document.getElementById("modeOfPresentation").textContent = rd.modeOfPresentation || "—";
+document.getElementById("followUpInterviews").textContent = rd.followUpInterviews || "—";
+document.getElementById("biggestChallenges").textContent = ab.biggestChallenges || "—";
 
-  renderImageGallery(document.getElementById("imagesGallery"), [
+
+document.getElementById("recommendationSelect").value = r.studentReviewDecision || "";
+document.getElementById("trackSelect").value = r.studentReviewTrack || "";
+
+renderImageGallery(document.getElementById("imagesGallery"), [
   { url: ab.figure1Url, label: "Figure 1" },
   { url: ab.figure2Url, label: "Figure 2" },
 ]);
-  // TODO (enable once dev is complete): lock the recommendation + track once a
-  // decision has been submitted, so the student reviewer can't change it later.
-  // const alreadyReviewed = !!r.studentReviewDecision;
-  // document.getElementById("recommendationSelect").disabled = alreadyReviewed;
-  // document.getElementById("trackSelect").disabled = alreadyReviewed;
-  // const saveBtn = document.getElementById("saveRecommendationBtn");
-  // saveBtn.disabled = alreadyReviewed;
-  // saveBtn.textContent = alreadyReviewed ? "Already reviewed" : "Save recommendation";
+
+const alreadyReviewed = !!r.studentReviewDecision;
+document.getElementById("recommendationSelect").disabled = alreadyReviewed;
+document.getElementById("trackSelect").disabled = alreadyReviewed;
+const saveBtn = document.getElementById("saveRecommendationBtn");
+saveBtn.disabled = alreadyReviewed;
+saveBtn.textContent = alreadyReviewed ? "Already reviewed" : "Save recommendation";
+
 }
 
 function wireControls() {
